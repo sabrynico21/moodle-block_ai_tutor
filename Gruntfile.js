@@ -10,7 +10,7 @@ module.exports = function (grunt) {
            },
            dist: {
                files: {
-                   'amd/build/uteluqchatbot.min.js': ['amd/src/uteluqchatbot.js'],
+                   'amd/build/alma_ai_tutor.min.js': ['amd/src/alma_ai_tutor.js'],
                    'amd/build/fileupload.min.js': ['amd/src/fileupload.js']
                }
            }

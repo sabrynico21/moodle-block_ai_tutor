@@ -2,13 +2,13 @@
 /**
  * PDF Extract API class for Moodle.
  *
- * @package    block_uteluqchatbot
+ * @package    block_alma_ai_tutor
  * @subpackage pdfextractapi
  * @copyright  2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace block_uteluqchatbot;
+namespace block_alma_ai_tutor;
 
 
 class pdf_extract_api
@@ -62,15 +62,15 @@ class pdf_extract_api
         curl_close($ch);
 
         if ($http_status != 200) {
-            return get_string('failed_to_obtain_access_token', 'block_uteluqchatbot') . $http_status;
+            return get_string('failed_to_obtain_access_token', 'block_alma_ai_tutor') . $http_status;
         }
 
         $response_data = json_decode($response, true);
         if (isset($response_data['access_token'])) {
             $this->access_token = $response_data['access_token'];
-            return get_string('access_token_obtained_successfully', 'block_uteluqchatbot');
+            return get_string('access_token_obtained_successfully', 'block_alma_ai_tutor');
         } else {
-            return get_string('failed_to_obtain_access_token_response', 'block_uteluqchatbot') . print_r($response_data, true);
+            return get_string('failed_to_obtain_access_token_response', 'block_alma_ai_tutor') . print_r($response_data, true);
         }
     }
 
@@ -104,7 +104,7 @@ class pdf_extract_api
         curl_close($ch);
 
         if ($http_status != 200) {
-            echo get_string('failed_to_obtain_upload_uri', 'block_uteluqchatbot') . $http_status . ". Response: $response\n";
+            echo get_string('failed_to_obtain_upload_uri', 'block_alma_ai_tutor') . $http_status . ". Response: $response\n";
             return null;
         }
 
@@ -112,9 +112,9 @@ class pdf_extract_api
         if (isset($response_data['uploadUri']) && isset($response_data['assetID'])) {
             $upload_uri = $response_data['uploadUri'];
             $asset_id = $response_data['assetID'];
-            echo get_string('asset_upload_uri_obtained', 'block_uteluqchatbot');
+            echo get_string('asset_upload_uri_obtained', 'block_alma_ai_tutor');
         } else {
-            echo get_string('failed_to_obtain_upload_uri_response', 'block_uteluqchatbot') . print_r($response_data, true);
+            echo get_string('failed_to_obtain_upload_uri_response', 'block_alma_ai_tutor') . print_r($response_data, true);
             return null;
         }
 
@@ -137,11 +137,11 @@ class pdf_extract_api
         curl_close($ch);
 
         if ($http_status != 200) {
-            echo get_string('failed_to_upload_file', 'block_uteluqchatbot') . $http_status . ". Response: $response\n";
+            echo get_string('failed_to_upload_file', 'block_alma_ai_tutor') . $http_status . ". Response: $response\n";
             return null;
         }
 
-        echo get_string('file_uploaded_successfully', 'block_uteluqchatbot');
+        echo get_string('file_uploaded_successfully', 'block_alma_ai_tutor');
         return $asset_id;
     }
 
@@ -195,25 +195,25 @@ class pdf_extract_api
 
         switch ($http_status) {
             case 201:
-                echo get_string('job_created_successfully', 'block_uteluqchatbot') . $location;
+                echo get_string('job_created_successfully', 'block_alma_ai_tutor') . $location;
                 return $location;
             case 400:
-                echo get_string('bad_request', 'block_uteluqchatbot');
+                echo get_string('bad_request', 'block_alma_ai_tutor');
                 break;
             case 401:
-                echo get_string('unauthorized', 'block_uteluqchatbot');
+                echo get_string('unauthorized', 'block_alma_ai_tutor');
                 break;
             case 404:
-                echo get_string('resource_not_found', 'block_uteluqchatbot');
+                echo get_string('resource_not_found', 'block_alma_ai_tutor');
                 break;
             case 429:
-                echo get_string('quota_exceeded', 'block_uteluqchatbot');
+                echo get_string('quota_exceeded', 'block_alma_ai_tutor');
                 break;
             case 500:
-                echo get_string('internal_server_error', 'block_uteluqchatbot');
+                echo get_string('internal_server_error', 'block_alma_ai_tutor');
                 break;
             default:
-                echo get_string('unexpected_http_status', 'block_uteluqchatbot') . $http_status . ". Response: $body\n";
+                echo get_string('unexpected_http_status', 'block_alma_ai_tutor') . $http_status . ". Response: $body\n";
                 break;
         }
 
@@ -245,33 +245,33 @@ class pdf_extract_api
         curl_close($ch);
 
         if ($http_status != 200) {
-            echo get_string('failed_to_get_job_status', 'block_uteluqchatbot') . $http_status . ". Response: $response\n";
+            echo get_string('failed_to_get_job_status', 'block_alma_ai_tutor') . $http_status . ". Response: $response\n";
             return ['status' => 'in progress'];
         }
 
         $response_data = json_decode($response, true);
         if (json_last_error() === JSON_ERROR_NONE && isset($response_data['status'])) {
             $status = $response_data['status'];
-            echo get_string('job_status', 'block_uteluqchatbot') . $status . "\n";
+            echo get_string('job_status', 'block_alma_ai_tutor') . $status . "\n";
 
             if ($status === 'done') {
                 if (isset($response_data['content']['downloadUri'])) {
                     $download_uri = $response_data['content']['downloadUri'];
-                    echo get_string('job_completed_successfully', 'block_uteluqchatbot') . $download_uri;
+                    echo get_string('job_completed_successfully', 'block_alma_ai_tutor') . $download_uri;
                     return ['status' => 'done', 'downloadUri' => $download_uri];
                 } else {
-                    echo get_string('job_completed_but_download_uri_missing', 'block_uteluqchatbot');
+                    echo get_string('job_completed_but_download_uri_missing', 'block_alma_ai_tutor');
                     return ['status' => 'in progress'];
                 }
             } elseif ($status === 'in progress') {
-                echo get_string('job_in_progress', 'block_uteluqchatbot');
+                echo get_string('job_in_progress', 'block_alma_ai_tutor');
                 return ['status' => 'in progress'];
             } elseif ($status === 'failed') {
-                echo get_string('job_failed', 'block_uteluqchatbot');
+                echo get_string('job_failed', 'block_alma_ai_tutor');
                 return ['status' => 'failed'];
             }
         } else {
-            echo get_string('failed_to_decode_json_response', 'block_uteluqchatbot') . print_r($response, true);
+            echo get_string('failed_to_decode_json_response', 'block_alma_ai_tutor') . print_r($response, true);
             return ['status' => 'in progress'];
         }
 
@@ -299,11 +299,11 @@ class pdf_extract_api
         curl_close($ch);
 
         if ($http_status != 200) {
-            echo get_string('failed_to_download_asset', 'block_uteluqchatbot') . $http_status . ". Response: $response\n";
+            echo get_string('failed_to_download_asset', 'block_alma_ai_tutor') . $http_status . ". Response: $response\n";
             return null;
         }
 
-        echo get_string('asset_downloaded_successfully', 'block_uteluqchatbot');
+        echo get_string('asset_downloaded_successfully', 'block_alma_ai_tutor');
         return $response;
     }
 
@@ -317,7 +317,7 @@ class pdf_extract_api
     {
         $donnees = json_decode($contenu, true);
         if ($donnees === null) {
-            die(get_string('error_decoding_json_file', 'block_uteluqchatbot'));
+            die(get_string('error_decoding_json_file', 'block_alma_ai_tutor'));
         }
 
         $texte_complet = "ok";
@@ -343,12 +343,12 @@ class pdf_extract_api
         $this->get_access_token();
         $asset_id = $this->upload_asset($file_path);
         if ($asset_id === null) {
-            return get_string('error_uploading_asset', 'block_uteluqchatbot');
+            return get_string('error_uploading_asset', 'block_alma_ai_tutor');
         }
 
         $location_url = $this->create_job($asset_id);
         if ($location_url === null) {
-            return get_string('error_creating_job', 'block_uteluqchatbot');
+            return get_string('error_creating_job', 'block_alma_ai_tutor');
         }
 
         $status = 'in progress';
@@ -363,7 +363,7 @@ class pdf_extract_api
                     $download_uri = $job_status['downloadUri'];
                     break;
                 } elseif ($status === 'failed') {
-                    throw new \Exception(get_string('job_failed', 'block_uteluqchatbot'));
+                    throw new \Exception(get_string('job_failed', 'block_alma_ai_tutor'));
                 }
             }
         }
@@ -373,6 +373,6 @@ class pdf_extract_api
             $text = $this->extraire_texte($result);
             return $text;
         }
-        return get_string('error_processing_pdf', 'block_uteluqchatbot');
+        return get_string('error_processing_pdf', 'block_alma_ai_tutor');
     }
 }

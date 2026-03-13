@@ -1,426 +1,206 @@
 <?php
 /**
- * Weaviate Connector class for Moodle.
+ * Bedrock connector class for Moodle chatbot.
  *
- * @package    block_uteluqchatbot
+ * @package    block_alma_ai_tutor
  * @subpackage weaviateconnector
- * @copyright  2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
+ * @copyright  2025 Universite TELUQ and the UNIVERSITE GASTON BERGER DE SAINT-LOUIS
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace block_uteluqchatbot;
+namespace block_alma_ai_tutor;
 
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Class weaviate_connector
  *
- * This class manages all interactions with a Weaviate instance,
- * including connection, document indexing, semantic search,
- * and content generation.
+ * Kept for backward compatibility with existing external service wiring,
+ * but the implementation now uses Amazon Bedrock Runtime + Knowledge Bases.
  */
-class weaviate_connector
-{
-    /** @var string Weaviate instance URL */
-    private $api_url;
+class weaviate_connector {
+    /** @var string */
+    private $region;
 
+    /** @var string */
+    private $access_key;
+
+    /** @var string */
+    private $secret_key;
+
+    /** @var string */
+    private $knowledge_base_id;
+
+    /** @var string */
+    private $chat_model_id;
+
+    /** @var string */
+    private $data_source_id;
+
+    /** @var string */
+    private $s3_bucket;
+
+    /** @var string */
     private $last_prompt;
 
-    /** @var string API Key for Weaviate authentication */
-    private $api_key;
-
-    /** @var string API Key for Cohere authentication */
-    private $cohere_api_key;
-
-    /** @var string|null Stores the last error occurred */
+    /** @var string|null */
     private ?string $last_error = null;
 
-    /** @var int Batch size for batch indexing */
-    private int $batch_size = 100;
-
     /**
-     * Constructor
-     *
-     * Initializes a new instance of the Weaviate connector
-     *
-     * @param string $api_url Weaviate instance URL
-     * @param string $api_key Weaviate API Key
-     * @param string $cohere_api_key Cohere API Key
+     * @param string $region AWS region
+     * @param string $access_key AWS access key
+     * @param string $secret_key AWS secret key
+     * @param string $knowledge_base_id Bedrock knowledge base id
+     * @param string $chat_model_id Bedrock model id used for direct chat
+     * @param string $data_source_id Optional data source id for ingestion job
+     * @param string $s3_bucket S3 bucket name backing the Knowledge Base data source
      */
-    public function __construct(string $api_url, string $api_key, string $cohere_api_key)
-    {
-        $this->api_url = rtrim($api_url, '/');
-        $this->api_key = $api_key;
-        $this->cohere_api_key = $cohere_api_key;
+    public function __construct(
+        string $region,
+        string $access_key,
+        string $secret_key,
+        string $knowledge_base_id,
+        string $chat_model_id = 'cohere.command-r-v1:0',
+        string $data_source_id = '',
+        string $s3_bucket = ''
+    ) {
+        $this->region = trim($region);
+        $this->access_key = trim($access_key);
+        $this->secret_key = trim($secret_key);
+        $this->knowledge_base_id = trim($knowledge_base_id);
+        $this->chat_model_id = trim($chat_model_id);
+        $this->data_source_id = trim($data_source_id);
+        $this->s3_bucket = trim($s3_bucket);
     }
 
     /**
-     * Function to call the Cohere API
+     * Direct generation using Bedrock Runtime (kept method name for API compatibility).
      *
      * @param string $question Question to ask
-     * @param string $api_key API Key for Cohere
-     * @return string|null Generated text or null in case of error
+     * @param string $api_key Deprecated parameter kept for compatibility
+     * @return string|null
      */
-    public function get_cohere_response(string $question, string $api_key): ?string
-    {
-        $url = 'https://api.cohere.com/v2/chat';
-        // Prepare data for the request
-        $data = [
-            'model' => 'command-r-03-2024',
+    public function get_cohere_response(string $question, string $api_key = ''): ?string {
+        $payload = [
             'messages' => [
-                ['role' => 'user', 'content' => $question]
-            ]
+                [
+                    'role' => 'user',
+                    'content' => [
+                        ['text' => $question],
+                    ],
+                ],
+            ],
+            'inferenceConfig' => [
+                'maxTokens' => 700,
+                'temperature' => 0.3,
+            ],
         ];
 
-        // Initialize cURL
-        $ch = curl_init($url);
-
-        // Configure cURL options
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $api_key,
-            'Content-Type: application/json',
-            'Accept: application/json'
-        ]);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_VERBOSE, true);
-
-        // Create a temporary file to store debug information
-        $debug_file = fopen('php://temp', 'w+');
-        curl_setopt($ch, CURLOPT_STDERR, $debug_file);
-
-        // Execute the request
-        $response = curl_exec($ch);
-
-        // Retrieve debug information
-        rewind($debug_file);
-        $debug_info = stream_get_contents($debug_file);
-
-        // Check for cURL errors
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_error = curl_error($ch);
-
-        // Close the cURL session
-        curl_close($ch);
-
-        // Detailed log
-        error_log('HTTP Status Code: ' . $http_code);
-        error_log('cURL Debug Info: ' . $debug_info);
-        error_log('Raw Response: ' . $response);
-
-        // Error handling
-        if ($curl_error) {
-            return get_string('curl_error', 'block_uteluqchatbot') . $curl_error;
-        }
-
-        // Check HTTP status code
-        if ($http_code !== 200) {
-            return get_string('http_error', 'block_uteluqchatbot') . $http_code . ': ' . $response;
-        }
-
-        // Decode the JSON response
-        $response_data = json_decode($response, true);
-
-        // Check for JSON decoding errors
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return get_string('json_decode_error', 'block_uteluqchatbot') . json_last_error_msg() .
-                ' - Raw response: ' . $response;
-        }
-
-        // Extract the response
-        if (isset($response_data['message']['content'][0]['text'])) {
-            $this->last_prompt = $question;
-            return $response_data['message']['content'][0]['text'];
-        }
-
-        // Return an error message if no response is generated
-        return get_string('no_response_generated', 'block_uteluqchatbot') . print_r($response_data, true);
-    }
-
-    /**
-     * Sends a request to get answers related to a question and a collection
-     *
-     * @param string $course_name Course name
-     * @param string $collection Target collection name
-     * @param string $question Question asked
-     * @param int $user_id User ID
-     * @param int $course_id Course ID
-     * @return string|null Generated text or null in case of error
-     */
-    public function get_question_answer($course_name, string $collection, string $question, $user_id, $course_id): ?string
-    {
-        global $COURSE, $DB, $USER;
-
-        // Query with integer values
-        $task = $DB->get_record('block_uteluqchatbot_prompts', array('userid' => $user_id, 'courseid' => $course_id))->prompt;
-
-        // Get the last 10 conversations of the user
-        $last_conversations = $DB->get_records_sql(
-            "SELECT question, answer
-            FROM {block_uteluqchatbot_conversations}
-            WHERE userid = :userid
-            ORDER BY timecreated DESC
-            LIMIT 10",
-            ['userid' => $user_id]
-        );
-
-        // Initialize variables to avoid errors if less than 2 conversations
-        $historique = "";
-
-        // Convert the result to an indexed array
-        $conversations = array_values($last_conversations);
-
-        // Build the history format
-        if (count($conversations) > 0) {
-            $historique = get_string('previous_interactions_history', 'block_uteluqchatbot') . "\n\n";
-
-            foreach ($conversations as $index => $conversation) {
-                $num = $index + 1;
-                $historique .= get_string('previous_question', 'block_uteluqchatbot', $num) . $conversation->question . "\n";
-                $historique .= get_string('answer', 'block_uteluqchatbot') . $conversation->answer . "\n\n";
-            }
-        }
-        // Determine the prompt to use
-        if (!$task) {
-            $task = get_string('default_prompt', 'block_uteluqchatbot');
-        }
-
-        $task = str_replace('[[ coursename ]]', $course_name, $task);
-        $task = str_replace('[[ question ]]', $question, $task);
-        $task = str_replace('[[ history ]]', $historique, $task);
-
-        // Properly encode the prompt for inclusion in the GraphQL query
-        $task = json_encode($task);
-        $task = substr($task, 1, -1);
-
-        $question = json_encode($question);
-        $question = substr($question, 1, -1);
-        $query = [
-            'query' => "{
-                Get {
-                    $collection (
-                        limit: 10
-                        nearText: {
-                            concepts: [\"$question\"]
-                        }
-                    ) {
-                        texte
-                        cours
-                        _additional {
-                            generate(
-                                groupedResult: {
-                                    task: \"$task\"
-                                }
-                            ) {
-                                groupedResult
-                                error
-                            }
-                        }
-                    }
-                }
-            }"
-        ];
-
-        $headers = [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $this->api_key,
-            'X-Cohere-Api-Key: ' . $this->cohere_api_key
-        ];
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->api_url . '/v1/graphql');
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($query));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        if (curl_errno($ch) || $http_code !== 200) {
-            $this->last_error = curl_error($ch) ?: get_string('http_code', 'block_uteluqchatbot') . $http_code;
-            curl_close($ch);
+        $result = $this->bedrock_runtime_request('/model/' . rawurlencode($this->chat_model_id) . '/converse', $payload);
+        if ($result === null) {
             return null;
         }
 
-        curl_close($ch);
-
-        $decoded_response = json_decode($response, true);
-        if (isset($decoded_response['data']['Get'][$collection][0]['_additional']['generate']['groupedResult'])) {
-            return $decoded_response['data']['Get'][$collection][0]['_additional']['generate']['groupedResult'];
+        $text = $result['output']['message']['content'][0]['text'] ?? null;
+        if (!$text) {
+            $this->last_error = get_string('invalid_response_format', 'block_alma_ai_tutor');
+            return null;
         }
 
-        $this->last_error = get_string('invalid_response_format', 'block_uteluqchatbot');
-        return null;
+        $this->last_prompt = $question;
+        return $text;
     }
 
     /**
-     * Deletes an existing collection (class) in Weaviate
-     *
-     * @param string $class_name Name of the collection to delete
-     * @return bool True if deletion is successful, False otherwise
+     * RAG answer generation through Bedrock Knowledge Base.
      */
-    public function delete_collection(string $class_name): bool
-    {
-        // Construct the URL for schema deletion
-        $endpoint = $this->api_url . '/v1/schema/' . urlencode($class_name);
+    public function get_question_answer($course_name, string $collection, string $question, $user_id, $course_id): ?string {
+        global $DB;
 
-        // Configure and execute the CURL request
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $endpoint,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_CUSTOMREQUEST => 'DELETE',
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->api_key
-            ]
-        ]);
+        $taskrecord = $DB->get_record('block_alma_ai_tutor_prompts', ['userid' => $user_id, 'courseid' => $course_id]);
+        $task = $taskrecord ? $taskrecord->prompt : get_string('default_prompt', 'block_alma_ai_tutor');
 
-        // Execute the request and retrieve the response
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $last_conversations = $DB->get_records_sql(
+            "SELECT question, answer
+               FROM {block_alma_ai_tutor_conversations}
+              WHERE userid = :userid
+           ORDER BY timecreated DESC
+              LIMIT 10",
+            ['userid' => $user_id]
+        );
 
-        // Handle CURL errors
-        if (curl_errno($ch)) {
-            $this->last_error = curl_error($ch);
-            curl_close($ch);
-            return false;
-        }
-
-        curl_close($ch);
-
-        // Check HTTP response code
-        if ($http_code !== 200 && $http_code !== 204) {
-            $this->last_error = get_string('http_error', 'block_uteluqchatbot') . $http_code . ": " . $response;
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Checks if a collection already exists in Weaviate
-     *
-     * @param string $class_name Name of the collection to check
-     * @return bool True if the collection exists, False otherwise
-     */
-    public function collection_exists(string $class_name): bool
-    {
-        // Construct the URL to retrieve the schema
-        $endpoint = $this->api_url . '/v1/schema';
-
-        // Configure and execute the CURL request
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $endpoint,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->api_key
-            ]
-        ]);
-
-        // Execute the request and retrieve the response
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        // Handle CURL errors
-        if (curl_errno($ch)) {
-            $this->last_error = curl_error($ch);
-            curl_close($ch);
-            return false;
-        }
-
-        curl_close($ch);
-
-        // Check HTTP response code
-        if ($http_code !== 200) {
-            $this->last_error = get_string('http_error', 'block_uteluqchatbot') . $http_code . ": " . $response;
-            return false;
-        }
-
-        // Decode the JSON response
-        $schema = json_decode($response, true);
-
-        // Check for the presence of the collection in the schema
-        if (isset($schema['classes'])) {
-            foreach ($schema['classes'] as $class) {
-                if ($class['class'] === $class_name) {
-                    return true;
-                }
+        $history = '';
+        $conversations = array_values($last_conversations);
+        if (count($conversations) > 0) {
+            $history = get_string('previous_interactions_history', 'block_alma_ai_tutor') . "\n\n";
+            foreach ($conversations as $index => $conversation) {
+                $num = $index + 1;
+                $history .= get_string('previous_question', 'block_alma_ai_tutor', $num) . $conversation->question . "\n";
+                $history .= get_string('answer', 'block_alma_ai_tutor') . $conversation->answer . "\n\n";
             }
         }
 
-        return false;
+        $task = str_replace('[[ coursename ]]', (string)$course_name, $task);
+        $task = str_replace('[[ question ]]', $question, $task);
+        $task = str_replace('[[ history ]]', $history, $task);
+
+        $response = $this->retrieve_and_generate($question, $task, (string)$course_id);
+        if ($response === null) {
+            return null;
+        }
+
+        $this->last_prompt = $task;
+        return $response;
     }
 
     /**
-     * Creates a new collection (class) in Weaviate
+     * Upload a file into the Knowledge Base.
      *
-     * This method configures a new collection with a vectorizer
-     * and specific modules for text processing
-     *
-     * @param string $class_name Name of the collection to create
-     * @param string $vectorizer Name of the vectorizer (default text2vec-cohere)
-     * @param array $module_config Additional module configuration
-     * @return bool True if creation is successful, False otherwise
+     * This implementation targets S3-backed Knowledge Bases:
+     * upload file to S3, then trigger StartIngestionJob for the data source.
      */
-    public function create_collection(
-        string $class_name,
-        string $vectorizer = "text2vec-cohere",
-        array $module_config = []
-    ): bool {
-        // Construct the URL for schema creation
-        $endpoint = $this->api_url . '/v1/schema';
-
-        // Prepare the collection configuration
-        $data = [
-            'class' => $class_name,
-            'vectorizer' => $vectorizer,
-            'moduleConfig' => array_merge(
-                [
-                    $vectorizer => [],
-                    'generative-cohere' => []
-                ],
-                $module_config
-            )
-        ];
-
-        // Configure and execute the CURL request
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $endpoint,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->api_key
-            ]
-        ]);
-
-        // Execute the request and retrieve the response
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        // Handle CURL errors
-        if (curl_errno($ch)) {
-            $this->last_error = curl_error($ch);
-            curl_close($ch);
+    public function index_text_file(string $file_path, string $collection, string $course_id): bool {
+        if (!file_exists($file_path)) {
+            $this->last_error = get_string('file_not_found', 'block_alma_ai_tutor') . $file_path;
             return false;
         }
 
-        curl_close($ch);
+        if ($this->s3_bucket === '') {
+            $this->last_error = 'S3 bucket is not configured. Set "S3 bucket name for Knowledge Base storage" in plugin settings.';
+            return false;
+        }
 
-        // Check HTTP response code
-        if ($http_code !== 200) {
-            $this->last_error = get_string('http_error', 'block_uteluqchatbot') . $http_code . ": " . $response;
+        if ($this->data_source_id === '') {
+            $this->last_error = 'Knowledge Base data source ID is not configured. Set "Amazon Bedrock data source ID" in plugin settings.';
+            return false;
+        }
+
+        $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION)) ?: 'txt';
+        $is_pdf = ($ext === 'pdf');
+
+        $content = file_get_contents($file_path);
+        if ($content === false || $content === '') {
+            $this->last_error = get_string('unable_to_read_file', 'block_alma_ai_tutor');
+            return false;
+        }
+
+        $s3_key = 'courses/' . $course_id . '/' . sha1($file_path . '|' . $course_id . '|' . microtime()) . '.' . $ext;
+        $content_type = $is_pdf ? 'application/pdf' : 'text/plain; charset=utf-8';
+
+        if (!$this->s3_put_object($this->s3_bucket, $s3_key, $content, $content_type)) {
+            return false;
+        }
+
+        $ingestion = $this->bedrock_agent_request(
+            '/knowledgebases/' . rawurlencode($this->knowledge_base_id)
+                . '/datasources/' . rawurlencode($this->data_source_id) . '/ingestionjobs',
+            [
+                'knowledgeBaseId' => $this->knowledge_base_id,
+                'dataSourceId'    => $this->data_source_id,
+            ]
+        );
+
+        if ($ingestion === null) {
             return false;
         }
 
@@ -428,447 +208,337 @@ class weaviate_connector
     }
 
     /**
-     * Cleans the input text for indexing in Weaviate
+     * Upload an object to an S3 bucket using AWS SigV4.
      *
-     * Normalizes spaces and removes problematic characters
-     * while preserving useful special characters
-     *
-     * @param string $text Text to clean
-     * @return string Cleaned text
+     * @param string $bucket Bucket name
+     * @param string $key Object key (path inside the bucket)
+     * @param string $content Raw bytes
+     * @param string $content_type MIME type
+     * @return bool
      */
-    private function clean_text(string $text): string
-    {
-        // Convert non-UTF8 or invalid characters
-        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+    private function s3_put_object(string $bucket, string $key, string $content, string $content_type = 'text/plain; charset=utf-8'): bool {
+        $host = $bucket . '.s3.' . $this->region . '.amazonaws.com';
+        $path = '/' . ltrim($key, '/');
 
-        // Remove invisible control characters (except newlines and tabs)
-        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+        $signer = new aws_v4_signer($this->access_key, $this->secret_key, $this->region, 's3', $host);
+        $headers = $signer->sign_request('PUT', $path, '', $content, [
+            'content-type' => $content_type,
+        ]);
 
-        // Normalize newlines
-        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        $headerlines = [];
+        foreach ($headers as $k => $v) {
+            $headerlines[] = $k . ': ' . $v;
+        }
 
-        // Normalize multiple spaces into a single space
-        $text = preg_replace('/[ \t]+/', ' ', $text);
+        $ch = curl_init('https://' . $host . $path);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST  => 'PUT',
+            CURLOPT_POSTFIELDS     => $content,
+            CURLOPT_HTTPHEADER     => $headerlines,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_TIMEOUT        => 120,
+        ]);
 
-        // Limit consecutive newlines to a maximum of two
-        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+        $response  = curl_exec($ch);
+        $httpcode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlerror = curl_error($ch);
+        curl_close($ch);
 
-        // Remove spaces at the beginning and end
+        if ($curlerror) {
+            $this->last_error = get_string('curl_error', 'block_alma_ai_tutor') . $curlerror;
+            return false;
+        }
+
+        if ($httpcode < 200 || $httpcode >= 300) {
+            $this->last_error = get_string('http_error', 'block_alma_ai_tutor') . $httpcode . ': ' . $response;
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function get_last_error(): ?string {
+        return $this->last_error;
+    }
+
+    /**
+     * Trigger a manual re-sync of the Knowledge Base data source.
+     * 
+     * This will re-index all S3 objects in the data source,
+     * clearing outdated cached versions and picking up new/modified files.
+     * 
+     * @return bool True if ingestion job started successfully
+     */
+    public function resync_knowledge_base(): bool {
+        if ($this->knowledge_base_id === '') {
+            $this->last_error = 'Knowledge Base ID is not configured.';
+            return false;
+        }
+
+        if ($this->data_source_id === '') {
+            $this->last_error = 'Knowledge Base data source ID is not configured.';
+            return false;
+        }
+
+        $ingestion = $this->bedrock_agent_request(
+            '/knowledgebases/' . rawurlencode($this->knowledge_base_id)
+                . '/datasources/' . rawurlencode($this->data_source_id) . '/ingestionjobs',
+            [
+                'knowledgeBaseId' => $this->knowledge_base_id,
+                'dataSourceId'    => $this->data_source_id,
+            ]
+        );
+
+        if ($ingestion === null) {
+            return false;
+        }
+
+        $this->last_error = 'Knowledge Base re-sync initiated. This may take 1-5 minutes to complete.';
+        return true;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function get_last_prompt(): ?string {
+        return $this->last_prompt;
+    }
+
+    /**
+     * @param string $question
+     * @param string $task
+     * @param string $courseid
+     * @return string|null
+     */
+    private function retrieve_and_generate(string $question, string $task, string $courseid): ?string {
+        $prompttemplate = $this->ensure_kb_prompt_template($task);
+        if (strpos($prompttemplate, '$search_results$') === false) {
+            $prompttemplate .= '\n\nRetrieved context:\n$search_results$';
+        }
+
+        $payload = [
+            'input' => [
+                'text' => $question,
+            ],
+            'retrieveAndGenerateConfiguration' => [
+                'type' => 'KNOWLEDGE_BASE',
+                'knowledgeBaseConfiguration' => [
+                    'knowledgeBaseId' => $this->knowledge_base_id,
+                    'modelArn' => 'arn:aws:bedrock:' . $this->region . '::foundation-model/' . $this->chat_model_id,
+                    'retrievalConfiguration' => [
+                        'vectorSearchConfiguration' => [
+                            'numberOfResults' => 10,
+                        ],
+                    ],
+                    'generationConfiguration' => [
+                        'promptTemplate' => [
+                            'textPromptTemplate' => $prompttemplate,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // S3-ingested documents do not carry inline "courseid" metadata by default.
+        // Keep retrieval unfiltered unless metadata mapping is explicitly configured in AWS.
+
+        $result = $this->bedrock_agent_runtime_request('/retrieveAndGenerate', $payload);
+        if ($result === null) {
+            return null;
+        }
+
+        $text = null;
+        if (!empty($result['output']['text']) && is_string($result['output']['text'])) {
+            $text = $result['output']['text'];
+        } else if (!empty($result['output']['message']['content'][0]['text'])
+            && is_string($result['output']['message']['content'][0]['text'])) {
+            $text = $result['output']['message']['content'][0]['text'];
+        } else if (!empty($result['text']) && is_string($result['text'])) {
+            $text = $result['text'];
+        }
+
+        if ($text === null || trim($text) === '') {
+            $this->last_error = get_string('invalid_response_format', 'block_alma_ai_tutor')
+                . ' Raw keys: ' . implode(', ', array_keys($result));
+            return null;
+        }
+
         $text = trim($text);
-
-        // Escape characters that could cause problems in JSON queries
-        $text = str_replace(['\\', "\f", "\b"], ['\\\\', '', ''], $text);
+        if (stripos($text, 'unable to assist you with this request') !== false) {
+            $diagnostic = $this->diagnose_retrieval_for_question($question);
+            if ($diagnostic !== null) {
+                $this->last_error = $diagnostic;
+                return null;
+            }
+        }
 
         return $text;
     }
 
     /**
-     * Splits the text into chunks of similar size
+     * Bedrock KB prompt templates must include $search_results$.
      *
-     * @param string $text Text to split
-     * @param int $chunk_size Approximate desired size for each chunk
-     * @return array Array of text chunks
+     * @param string $task
+     * @return string
      */
-    private function chunk_text(string $text, int $chunk_size = 300): array
-    {
-        $words = explode(' ', $text);
-        $chunks = [];
-        $current_chunk = [];
-        $current_length = 0;
-
-        foreach ($words as $word) {
-            $word_length = strlen($word);
-            if ($current_length + $word_length + 1 > $chunk_size && !empty($current_chunk)) {
-                $chunks[] = implode(' ', $current_chunk);
-                $current_chunk = [];
-                $current_length = 0;
-            }
-            $current_chunk[] = $word;
-            $current_length += $word_length + 1;
+    private function ensure_kb_prompt_template(string $task): string {
+        $template = trim($task);
+        if ($template === '') {
+            $template = 'Answer the user question using only the following retrieved context:\n\n$search_results$\n\nQuestion: $query$';
         }
 
-        if (!empty($current_chunk)) {
-            $chunks[] = implode(' ', $current_chunk);
+        if (strpos($template, '$search_results$') === false) {
+            $template .= '\n\nRetrieved context:\n$search_results$';
         }
 
-        return $chunks;
+        return $template;
     }
 
     /**
-     * Performs a semantic search with content generation
+     * Diagnose why RetrieveAndGenerate returned a generic refusal.
      *
-     * This method combines semantic search with the generation
-     * of new content based on the results
-     *
-     * @param string $collection Name of the collection to query
-     * @param string $concept Concept to search for
-     * @param string $generation_task Instruction for generation
-     * @param array $fields Fields to return in the results
-     * @param int $limit Maximum number of results
-     * @return array|null Results with generated content or null if error
+     * @param string $question
+     * @return string|null
      */
-    public function semantic_search_with_generation(
-        string $collection,
-        string $concept,
-        string $generation_task,
-        array $fields = ['texte', 'cours'],
-        int $limit = 3
-    ): ?array {
-        $graphql_endpoint = $this->api_url . '/v1/graphql';
+    private function diagnose_retrieval_for_question(string $question): ?string {
+        $retrieval = $this->bedrock_agent_runtime_request(
+            '/knowledgebases/' . rawurlencode($this->knowledge_base_id) . '/retrieve',
+            [
+                'knowledgeBaseId' => $this->knowledge_base_id,
+                'retrievalQuery' => ['text' => $question],
+                'retrievalConfiguration' => [
+                    'vectorSearchConfiguration' => [
+                        'numberOfResults' => 5,
+                    ],
+                ],
+            ]
+        );
 
-        // Prepare the list of fields for the GraphQL query
-        $fields_string = implode(' ', $fields);
-        // Escape quotes in the generation task
-        $escaped_task = str_replace('"', '\\"', $generation_task);
+        if ($retrieval === null) {
+            return $this->last_error ?: 'RetrieveAndGenerate returned a refusal and retrieval diagnostics failed.';
+        }
 
-        // Construct the GraphQL query
-        $query = [
-            'query' => "{
-                Get {
-                    $collection (
-                        limit: $limit
-                        nearText: {
-                            concepts: [\"$concept\"]
-                        }
-                    ) {
-                        $fields_string
-                        _additional {
-                            generate(
-                                groupedResult: {
-                                    task: \"$escaped_task\"
-                                }
-                            ) {
-                                groupedResult
-                                error
-                            }
-                        }
-                    }
-                }
-            }"
-        ];
+        $results = $retrieval['retrievalResults'] ?? [];
+        $count = is_array($results) ? count($results) : 0;
+        if ($count === 0) {
+            return 'No retrieval results found for this question. Root cause is usually one of: '
+                . '1) ingestion job still running, 2) S3 object path not included in KB data source prefix, '
+                . '3) KB data source sync failed.';
+        }
 
-        // Execute the request via CURL
-        $ch = curl_init($graphql_endpoint);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        return 'RetrieveAndGenerate returned a generic refusal even though retrieval returned '
+            . $count . ' result(s). Check your custom prompt in Moodle and KB guardrail/model policy settings in AWS.';
+    }
+
+    /**
+     * @param string $text
+     * @return string
+     */
+    private function clean_text(string $text): string {
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        $text = preg_replace('/[ \t]+/', ' ', $text);
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+        return trim($text);
+    }
+
+    /**
+     * @param string $path
+     * @param array $payload
+     * @return array|null
+     */
+    private function bedrock_runtime_request(string $path, array $payload): ?array {
+        $host = 'bedrock-runtime.' . $this->region . '.amazonaws.com';
+        return $this->signed_json_request('bedrock', $host, $path, $payload);
+    }
+
+    /**
+     * @param string $path
+     * @param array $payload
+     * @return array|null
+     */
+    private function bedrock_agent_runtime_request(string $path, array $payload): ?array {
+        $host = 'bedrock-agent-runtime.' . $this->region . '.amazonaws.com';
+        return $this->signed_json_request('bedrock', $host, $path, $payload);
+    }
+
+    /**
+     * @param string $path
+     * @param array $payload
+     * @return array|null
+     */
+    private function bedrock_agent_request(string $path, array $payload): ?array {
+        $host = 'bedrock-agent.' . $this->region . '.amazonaws.com';
+        return $this->signed_json_request('bedrock', $host, $path, $payload);
+    }
+
+    /**
+     * @param string $service
+     * @param string $host
+     * @param string $path
+     * @param array $payload
+     * @return array|null
+     */
+    private function signed_json_request(string $service, string $host, string $path, array $payload): ?array {
+        $body = json_encode($payload);
+        if ($body === false) {
+            $this->last_error = get_string('json_encode_error', 'block_alma_ai_tutor') . json_last_error_msg();
+            return null;
+        }
+
+        $signer = new aws_v4_signer($this->access_key, $this->secret_key, $this->region, $service, $host);
+        $headers = $signer->sign_request('POST', $path, '', $body, [
+            'content-type' => 'application/json',
+            'accept' => 'application/json',
+        ]);
+
+        $headerlines = [];
+        foreach ($headers as $key => $value) {
+            $headerlines[] = $key . ': ' . $value;
+        }
+
+        $url = 'https://' . $host . $path;
+        $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($query),
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->api_key,
-                'X-Cohere-Api-Key: ' . $this->cohere_api_key
-            ]
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_HTTPHEADER => $headerlines,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_TIMEOUT => 60,
         ]);
 
-        // Retrieve and verify the response
         $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        if (curl_errno($ch)) {
-            $this->last_error = curl_error($ch);
-            curl_close($ch);
-            return null;
-        }
-
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlerror = curl_error($ch);
         curl_close($ch);
 
-        // Check HTTP code
-        if ($http_code !== 200) {
-            $this->last_error = get_string('http_error', 'block_uteluqchatbot') . $http_code . ": $response";
+        if ($curlerror) {
+            $this->last_error = get_string('curl_error', 'block_alma_ai_tutor') . $curlerror;
             return null;
         }
 
-        // Decode the JSON response
-        $result = json_decode($response, true);
+        if ($httpcode < 200 || $httpcode >= 300) {
+            $this->last_error = get_string('http_error', 'block_alma_ai_tutor') . $httpcode . ': ' . $response;
+            return null;
+        }
+
+        if ($response === '' || $response === null) {
+            $this->last_error = 'Empty response body returned by API endpoint: ' . $path;
+            return null;
+        }
+
+        $decoded = json_decode($response, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->last_error = get_string('json_decode_error', 'block_uteluqchatbot') . json_last_error_msg();
+            $this->last_error = get_string('json_decode_error', 'block_alma_ai_tutor') . json_last_error_msg();
             return null;
         }
 
-        return $result['data']['Get'][$collection] ?? [];
-    }
-
-    /**
-     * Indexes a text file in Weaviate with retry mechanism
-     *
-     * Reads, cleans, splits, and indexes the content of a text file
-     *
-     * @param string $file_path Path to the file to index
-     * @param string $collection Target collection name
-     * @param string $course_id Course ID
-     * @return bool True if successful, False if error
-     */
-    public function index_text_file(string $file_path, string $collection, string $course_id): bool
-    {
-        global $CFG;
-
-        error_reporting(E_ALL);
-        ini_set('display_errors', 1);
-
-        // Check if the file exists
-        if (!file_exists($file_path)) {
-            $this->last_error = get_string('file_not_found', 'block_uteluqchatbot') . $file_path;
-            return false;
-        }
-
-        // Read the file
-        $text = file_get_contents($file_path);
-        if ($text === false) {
-            $this->last_error = get_string('unable_to_read_file', 'block_uteluqchatbot');
-            return false;
-        }
-
-        // Prepare the text
-        $cleaned_text = $this->clean_text($text);
-        $cleaned_text = $text;
-        $chunks = $this->chunk_text($cleaned_text);
-
-        // Configure for batch indexing
-        $batch_endpoint = $this->api_url . '/v1/batch/objects';
-        $current_batch = [];
-        $success = true;
-
-        // Retry parameters
-        $max_retries = 5;
-        $retry_delay = 1;
-        $max_retry_delay = 5;
-
-        // Process each chunk
-        $object_count = 0;
-
-        foreach ($chunks as $chunk) {
-            $object = [
-                'class' => $collection,
-                'properties' => [
-                    'texte' => $chunk,
-                    'cours' => $course_id,
-                    'filepath' => $file_path,
-                ]
-            ];
-            $current_batch[] = $object;
-            $object_count++;
-
-            // If the batch is full or it's the last chunk
-            if ($object_count >= $this->batch_size || $chunk === end($chunks)) {
-                // Manually construct JSON to avoid potential issues with json_encode
-                $json_objects = [];
-                foreach ($current_batch as $obj) {
-                    $json_obj = json_encode($obj);
-                    if ($json_obj === false) {
-                        $this->last_error = get_string('json_encode_error', 'block_uteluqchatbot') . json_last_error_msg();
-                        return false;
-                    }
-                    $json_objects[] = $json_obj;
-                }
-
-                $json_data = '{"objects":[' . implode(',', $json_objects) . ']}';
-
-                // Set up retry logic
-                $retry = 0;
-                $current_delay = $retry_delay;
-                $request_success = false;
-
-                while (!$request_success && $retry <= $max_retries) {
-                    if ($retry > 0) {
-                        sleep($current_delay);
-                        $current_delay = min($current_delay * 2, $max_retry_delay);
-                    }
-
-                    $ch = curl_init($batch_endpoint);
-                    curl_setopt_array($ch, [
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_SSL_VERIFYPEER => false,
-                        CURLOPT_POST => true,
-                        CURLOPT_POSTFIELDS => $json_data,
-                        CURLOPT_HTTPHEADER => [
-                            'Content-Type: application/json',
-                            'Authorization: Bearer ' . $this->api_key,
-                            'X-Cohere-Api-Key: ' . $this->cohere_api_key
-                        ],
-                        CURLOPT_TIMEOUT => 30,
-                    ]);
-
-                    $response = curl_exec($ch);
-                    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-                    if (curl_errno($ch)) {
-                        curl_close($ch);
-                        $retry++;
-                        continue;
-                    }
-
-                    if ($http_code >= 500 && $http_code < 600) {
-                        curl_close($ch);
-                        $retry++;
-                        continue;
-                    } elseif ($http_code < 200 || $http_code >= 300) {
-                        $this->last_error = get_string('http_error', 'block_uteluqchatbot') . $http_code . ": $response";
-                        curl_close($ch);
-                        return false;
-                    }
-
-                    curl_close($ch);
-                    $request_success = true;
-                }
-
-                if (!$request_success) {
-                    $this->last_error = get_string('failure_after_retries', 'block_uteluqchatbot') . $max_retries . get_string('last_error', 'block_uteluqchatbot') . $http_code;
-                    return false;
-                }
-
-                $current_batch = [];
-                $object_count = 0;
-
-                sleep(1);
-            }
-        }
-
-        return $success;
-    }
-
-    /**
-     * Formats the search results
-     *
-     * Separates the data and generated content into a more readable format
-     *
-     * @param array $results Raw search results
-     * @return array Formatted results
-     */
-    public function format_search_results(array $results): array
-    {
-        $formatted_results = [];
-
-        foreach ($results as $result) {
-            $formatted_result = [
-                'data' => array_filter($result, function ($key) {
-                    return $key !== '_additional';
-                }, ARRAY_FILTER_USE_KEY),
-                'generated_content' => null,
-                'generation_error' => null
-            ];
-
-            if (isset($result['_additional']['generate'])) {
-                $formatted_result['generated_content'] =
-                    $result['_additional']['generate']['groupedResult'] ?? null;
-                $formatted_result['generation_error'] =
-                    $result['_additional']['generate']['error'] ?? null;
-            }
-
-            $formatted_results[] = $formatted_result;
-        }
-
-        return $formatted_results;
-    }
-
-    /**
-     * Sets the batch size for indexing
-     *
-     * @param int $size New batch size
-     */
-    public function set_batch_size(int $size): void
-    {
-        $this->batch_size = $size;
-    }
-
-    /**
-     * Retrieves the last error occurred
-     *
-     * @return string|null Error message or null if no error
-     */
-    public function get_last_error(): ?string
-    {
-        return $this->last_error;
-    }
-
-    /**
-     * Retrieves the last prompt
-     *
-     * @return string|null Last prompt or null if none
-     */
-    public function get_last_prompt(): ?string
-    {
-        return $this->last_prompt;
-    }
-
-    /**
-     * Performs a semantic search in a Weaviate collection.
-     *
-     * This method queries the Weaviate database to obtain results based
-     * on a semantic search using a given concept.
-     *
-     * @param string $collection Name of the collection to query
-     * @param string $concept Concept to search for
-     * @param array $fields Fields to return in the results
-     * @param int $limit Maximum number of results to return
-     * @return array|null Semantic search results or null in case of error
-     */
-    public function semantic_search(
-        string $collection,
-        string $concept,
-        array $fields = ['texte', 'cours'],
-        int $limit = 3
-    ): ?array {
-        $graphql_endpoint = $this->api_url . '/v1/graphql';
-
-        // Prepare the list of fields for the GraphQL query
-        $fields_string = implode(' ', $fields);
-
-        // Construct the GraphQL query
-        $query = [
-            'query' => "{
-            Get {
-                $collection (
-                    limit: $limit
-                    nearText: {
-                        concepts: [\"$concept\"]
-                    }
-                ) {
-                    $fields_string
-                }
-            }
-        }"
-        ];
-
-        // Execute the request via CURL
-        $ch = curl_init($graphql_endpoint);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($query),
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->api_key,
-                'X-Cohere-Api-Key: ' . $this->cohere_api_key
-            ]
-        ]);
-
-        // Retrieve and verify the response
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        if (curl_errno($ch)) {
-            $this->last_error = curl_error($ch);
-            curl_close($ch);
-            return null;
-        }
-
-        curl_close($ch);
-
-        // Check HTTP code
-        if ($http_code !== 200) {
-            $this->last_error = get_string('http_error', 'block_uteluqchatbot') . $http_code . ": $response";
-            return null;
-        }
-
-        // Decode the JSON response
-        $result = json_decode($response, true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->last_error = get_string('json_decode_error', 'block_uteluqchatbot') . json_last_error_msg();
-            return null;
-        }
-
-        return $result['data']['Get'][$collection] ?? [];
+        return $decoded;
     }
 }

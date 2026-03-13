@@ -5,7 +5,7 @@
 
  /* For load-course-modal.mustache */
 
-.block_uteluqchatbot .modal {
+.block_alma_ai_tutor .modal {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -18,7 +18,7 @@
     overflow-y: auto;
 }
 
-.block_uteluqchatbot .modal-dialog {
+.block_alma_ai_tutor .modal-dialog {
     width: 90%;
     max-width: 500px;
     background-color: white;
@@ -29,22 +29,22 @@
     flex-direction: column;
 }
 
-.block_uteluqchatbot .modal-content {
+.block_alma_ai_tutor .modal-content {
     padding: 20px;
     overflow-y: auto;
 }
 
-.block_uteluqchatbot .modal-header, .block_uteluqchatbot .modal-footer {
+.block_alma_ai_tutor .modal-header, .block_alma_ai_tutor .modal-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.block_uteluqchatbot .modal-footer {
+.block_alma_ai_tutor .modal-footer {
     margin-top: 20px;
 }
 
-.block_uteluqchatbot .file-upload-container {
+.block_alma_ai_tutor .file-upload-container {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -56,11 +56,11 @@
     cursor: pointer;
 }
 
-.block_uteluqchatbot .file-upload-box {
+.block_alma_ai_tutor .file-upload-box {
     text-align: center;
 }
 
-.block_uteluqchatbot .uploaded-file {
+.block_alma_ai_tutor .uploaded-file {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -70,24 +70,24 @@
     margin-top: 10px;
 }
 
-.block_uteluqchatbot .uploaded-file button {
+.block_alma_ai_tutor .uploaded-file button {
     background: none;
     border: none;
     cursor: pointer;
 }
 
-.block_uteluqchatbot .uploaded-file svg {
+.block_alma_ai_tutor .uploaded-file svg {
     width: 16px;
     height: 16px;
 }
 
 @media (max-width: 600px) {
-    .block_uteluqchatbot .modal-footer {
+    .block_alma_ai_tutor .modal-footer {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .block_uteluqchatbot .modal-footer button {
+    .block_alma_ai_tutor .modal-footer button {
         width: 100%;
         margin-top: 10px;
     }
@@ -96,7 +96,7 @@
 
 
 /* For prompt_modal.mustache */
-.block_uteluqchatbot .modal {
+.block_alma_ai_tutor .modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -107,7 +107,7 @@
     display: none;
 }
 
-.block_uteluqchatbot .modal-dialog {
+.block_alma_ai_tutor .modal-dialog {
     background: white;
     border-radius: 12px;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
@@ -118,12 +118,12 @@
     width: 95%;
 }
 
-.block_uteluqchatbot .modal-content {
+.block_alma_ai_tutor .modal-content {
     border-radius: 12px;
     overflow: hidden;
 }
 
-.block_uteluqchatbot .modal-header {
+.block_alma_ai_tutor .modal-header {
     align-items: center;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
@@ -131,14 +131,14 @@
     padding: 16px 24px;
 }
 
-.block_uteluqchatbot .modal-title {
+.block_alma_ai_tutor .modal-title {
     color: #1e293b;
     font-size: 1.25rem;
     font-weight: 600;
     margin: 0;
 }
 
-.block_uteluqchatbot .close {
+.block_alma_ai_tutor .close {
     background: none;
     border: none;
     color: #64748b;
@@ -146,19 +146,19 @@
     padding: 4px;
 }
 
-.block_uteluqchatbot .close:hover {
+.block_alma_ai_tutor .close:hover {
     color: #4f46e5;
 }
 
-.block_uteluqchatbot .modal-body {
+.block_alma_ai_tutor .modal-body {
     padding: 24px;
 }
 
-.block_uteluqchatbot .form-group {
+.block_alma_ai_tutor .form-group {
     margin-bottom: 20px;
 }
 
-.block_uteluqchatbot .form-group label {
+.block_alma_ai_tutor .form-group label {
     color: #475569;
     display: block;
     font-size: 0.875rem;
@@ -166,7 +166,7 @@
     margin-bottom: 8px;
 }
 
-.block_uteluqchatbot .form-input {
+.block_alma_ai_tutor .form-input {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
@@ -178,18 +178,18 @@
     width: 100%;
 }
 
-.block_uteluqchatbot .form-input:focus {
+.block_alma_ai_tutor .form-input:focus {
     border-color: #6366F1;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
     outline: none;
 }
 
-.block_uteluqchatbot .prompt-textarea {
+.block_alma_ai_tutor .prompt-textarea {
     min-height: 150px;
     resize: vertical;
 }
 
-.block_uteluqchatbot .modal-footer {
+.block_alma_ai_tutor .modal-footer {
     border-top: 1px solid #e2e8f0;
     display: flex;
     gap: 12px;
@@ -197,8 +197,8 @@
     padding-top: 20px;
 }
 
-.block_uteluqchatbot .btn-primary,
-.block_uteluqchatbot .btn-secondary {
+.block_alma_ai_tutor .btn-primary,
+.block_alma_ai_tutor .btn-secondary {
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -208,38 +208,38 @@
     transition: all 0.2s;
 }
 
-.block_uteluqchatbot .btn-primary {
+.block_alma_ai_tutor .btn-primary {
     background: #6366F1;
     color: white;
 }
 
-.block_uteluqchatbot .btn-primary:hover {
+.block_alma_ai_tutor .btn-primary:hover {
     background: #4f46e5;
 }
 
-.block_uteluqchatbot .btn-secondary {
+.block_alma_ai_tutor .btn-secondary {
     background: #f1f5f9;
     color: #475569;
 }
 
-.block_uteluqchatbot .btn-secondary:hover {
+.block_alma_ai_tutor .btn-secondary:hover {
     background: #e2e8f0;
 }
 
 @media (max-width: 640px) {
-    .block_uteluqchatbot .modal-dialog {
+    .block_alma_ai_tutor .modal-dialog {
         margin: 16px;
         width: auto;
     }
 
-    .block_uteluqchatbot .modal-body {
+    .block_alma_ai_tutor .modal-body {
         padding: 16px;
     }
 }
 
 
-/* For uteluqchatbot.mustache */
-    .block_uteluqchatbot .block-chatbot-container {
+/* For alma_ai_tutor.mustache */
+    .block_alma_ai_tutor .block-chatbot-container {
         background: #ffffff;
         border-radius: 12px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -253,7 +253,7 @@
         max-width: 1000px;
     }
 
-    .block_uteluqchatbot .chat-messages {
+    .block_alma_ai_tutor .chat-messages {
         flex-grow: 1;
         overflow-y: auto;
         padding: 20px;
@@ -261,20 +261,20 @@
         scrollbar-color: #6366F1 #f1f5f9;
     }
 
-    .block_uteluqchatbot .chat-messages::-webkit-scrollbar {
+    .block_alma_ai_tutor .chat-messages::-webkit-scrollbar {
         width: 6px;
     }
 
-    .block_uteluqchatbot .chat-messages::-webkit-scrollbar-track {
+    .block_alma_ai_tutor .chat-messages::-webkit-scrollbar-track {
         background: #f1f5f9;
     }
 
-    .block_uteluqchatbot .chat-messages::-webkit-scrollbar-thumb {
+    .block_alma_ai_tutor .chat-messages::-webkit-scrollbar-thumb {
         background-color: #6366F1;
         border-radius: 3px;
     }
 
-    .block_uteluqchatbot .message {
+    .block_alma_ai_tutor .message {
         border-radius: 15px;
         margin: 8px 0;
         max-width: 85%;
@@ -283,37 +283,37 @@
         word-wrap: break-word;
     }
 
-    .block_uteluqchatbot .user-message {
+    .block_alma_ai_tutor .user-message {
         background: #6366F1;
         color: white;
         margin-left: auto;
     }
 
-    .block_uteluqchatbot .bot-message {
+    .block_alma_ai_tutor .bot-message {
         background: #f1f5f9;
         color: #1e293b;
         margin-right: auto;
     }
 
-    .block_uteluqchatbot .welcome-message {
+    .block_alma_ai_tutor .welcome-message {
         display: flex;
         align-items: flex-start;
         margin-bottom: 16px;
     }
 
-    .block_uteluqchatbot .bot-avatar {
+    .block_alma_ai_tutor .bot-avatar {
         margin-right: 8px;
         margin-top: 4px;
     }
 
-    .block_uteluqchatbot .error-message {
+    .block_alma_ai_tutor .error-message {
         color: #ef4444;
         font-size: 0.875rem;
         margin: 8px 16px;
         text-align: center;
     }
 
-    .block_uteluqchatbot .chat-input-container {
+    .block_alma_ai_tutor .chat-input-container {
         background: #ffffff;
         border-top: 1px solid #e2e8f0;
         padding: 5px;
@@ -321,14 +321,14 @@
         flex-direction: column;
     }
 
-    .block_uteluqchatbot .chat-form {
+    .block_alma_ai_tutor .chat-form {
         display: flex;
         align-items: center;
         gap: 12px;
         margin-bottom: 8px;
     }
 
-    .block_uteluqchatbot .chat-input {
+    .block_alma_ai_tutor .chat-input {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 24px;
@@ -341,13 +341,13 @@
         max-width: calc(100% - 54px);
     }
 
-    .block_uteluqchatbot .chat-input:focus {
+    .block_alma_ai_tutor .chat-input:focus {
         border-color: #6366F1;
         outline: none;
         box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
     }
 
-    .block_uteluqchatbot .send-button {
+    .block_alma_ai_tutor .send-button {
         background: #6366F1;
         border: none;
         border-radius: 50%;
@@ -366,11 +366,11 @@
         margin-left: auto;
     }
 
-    .block_uteluqchatbot .send-button:hover {
+    .block_alma_ai_tutor .send-button:hover {
         background: #4f46e5;
     }
 
-    .block_uteluqchatbot .send-button svg {
+    .block_alma_ai_tutor .send-button svg {
         width: 20px;
         height: 20px;
         position: absolute;
@@ -379,7 +379,7 @@
         transform: translate(-50%, -50%);
     }
 
-    .block_uteluqchatbot .button-container {
+    .block_alma_ai_tutor .button-container {
         display: flex;
         justify-content: flex-end;
         margin-top: 8px;
@@ -387,7 +387,7 @@
         gap: 8px;
     }
 
-    .block_uteluqchatbot .toggle-buttons-checkbox {
+    .block_alma_ai_tutor .toggle-buttons-checkbox {
         display: flex;
         align-items: center;
         margin-right: 16px;
@@ -395,11 +395,11 @@
         color: #64748b;
     }
 
-    .block_uteluqchatbot .toggle-buttons-checkbox input[type="checkbox"] {
+    .block_alma_ai_tutor .toggle-buttons-checkbox input[type="checkbox"] {
         margin-right: 8px;
     }
 
-    .block_uteluqchatbot .prompt-button, .block_uteluqchatbot .file-upload-button {
+    .block_alma_ai_tutor .prompt-button, .block_alma_ai_tutor .file-upload-button {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 24px;
@@ -414,44 +414,44 @@
         white-space: nowrap;
     }
 
-    .block_uteluqchatbot .prompt-button {
+    .block_alma_ai_tutor .prompt-button {
         margin-right: 8px;
     }
 
-    .block_uteluqchatbot .prompt-button:hover, .block_uteluqchatbot .file-upload-button:hover {
+    .block_alma_ai_tutor .prompt-button:hover, .block_alma_ai_tutor .file-upload-button:hover {
         background: #f1f5f9;
         color: #4f46e5;
     }
 
     @media (max-width: 640px) {
-        .block_uteluqchatbot .block-chatbot-container {
+        .block_alma_ai_tutor .block-chatbot-container {
             height: 400px;
             max-width: 95%;
         }
 
-        .block_uteluqchatbot .message {
+        .block_alma_ai_tutor .message {
             max-width: 90%;
         }
 
-        .block_uteluqchatbot .chat-form {
+        .block_alma_ai_tutor .chat-form {
             gap: 8px;
         }
 
-        .block_uteluqchatbot .chat-input {
+        .block_alma_ai_tutor .chat-input {
             max-width: calc(100% - 50px);
         }
 
-        .block_uteluqchatbot .send-button {
+        .block_alma_ai_tutor .send-button {
             height: 42px;
             width: 42px;
             min-width: 42px;
         }
 
-        .block_uteluqchatbot .button-container {
+        .block_alma_ai_tutor .button-container {
             justify-content: space-between;
         }
 
-        .block_uteluqchatbot .prompt-button, .block_uteluqchatbot .file-upload-button {
+        .block_alma_ai_tutor .prompt-button, .block_alma_ai_tutor .file-upload-button {
             font-size: 0.75rem;
             padding: 6px 12px;
         }

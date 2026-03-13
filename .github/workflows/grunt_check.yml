@@ -31,5 +31,5 @@ jobs:
 
       - name: Compare minified files
         run: |
-          diff -q amd/build/uteluqchatbot.min.js .ci_backup/uteluqchatbot.min.js
+          diff -q amd/build/alma_ai_tutor.min.js .ci_backup/alma_ai_tutor.min.js
           diff -q amd/build/fileupload.min.js .ci_backup/fileupload.min.js

@@ -1,9 +1,9 @@
-# Moodle Block uteluqchatbot
-[![Moodle Plugin CI](https://github.com/uteluq/moodle-block_uteluqchatbot/actions/workflows/ci.yml/badge.svg)](https://github.com/uteluq/moodle-block_uteluqchatbot/actions/workflows/ci.yml) [![Code Quality Tools](https://github.com/uteluq/moodle-block_uteluqchatbot/actions/workflows/tools.yml/badge.svg)](https://github.com/uteluq/moodle-block_uteluqchatbot/actions/workflows/tools.yml) [![Grunt Minified Files Check](https://github.com/uteluq/moodle-block_uteluqchatbot/actions/workflows/grunt_check.yml/badge.svg)](https://github.com/uteluq/moodle-block_uteluqchatbot/actions/workflows/grunt_check.yml)
+# Moodle Block alma_ai_tutor
+[![Moodle Plugin CI](https://github.com/uteluq/moodle-block_alma_ai_tutor/actions/workflows/ci.yml/badge.svg)](https://github.com/uteluq/moodle-block_alma_ai_tutor/actions/workflows/ci.yml) [![Code Quality Tools](https://github.com/uteluq/moodle-block_alma_ai_tutor/actions/workflows/tools.yml/badge.svg)](https://github.com/uteluq/moodle-block_alma_ai_tutor/actions/workflows/tools.yml) [![Grunt Minified Files Check](https://github.com/uteluq/moodle-block_alma_ai_tutor/actions/workflows/grunt_check.yml/badge.svg)](https://github.com/uteluq/moodle-block_alma_ai_tutor/actions/workflows/grunt_check.yml)
 
 ![](https://upload.wikimedia.org/wikipedia/fr/b/bc/Logo_AUF.png)
 
-The uteluqchatbot plugin is a Moodle block plugin designed to enhance distance learning by providing an adaptive and innovative chatbot solution. Integrated into the Moodle platform, it supports three distinct user roles—Learner, Teacher, and Administrative Manager—to facilitate course interactions, content management, and plugin configuration. This plugin leverages Retrieval-Augmented Generation (RAG) to deliver precise, context-aware responses based on course materials, improving the learning experience for users.
+The alma_ai_tutor plugin is a Moodle block plugin designed to enhance distance learning by providing an adaptive and innovative chatbot solution. Integrated into the Moodle platform, it supports three distinct user roles—Learner, Teacher, and Administrative Manager—to facilitate course interactions, content management, and plugin configuration. This plugin leverages Retrieval-Augmented Generation (RAG) to deliver precise, context-aware responses based on course materials, improving the learning experience for users.
 
 ## Maturity
 - The plugin is in alpha version currently. We have validated it internally on a test server but it may still contain significant bugs. We do not currently recommend the plugin for production use.
@@ -39,7 +39,7 @@ The plugin currently supports the following languages:
 - **Testing Functionality**: Teachers can test the chatbot by posing questions to verify its performance with uploaded resources.
 
 ### Administrative Manager Role
-- **Plugin Configuration**: Admins configure the plugin via Moodle’s site administration interface, setting up API keys for services like Cohere, Adobe PDF Services, and Weaviate.
+- **Plugin Configuration**: Admins configure the plugin via Moodle’s site administration interface, setting up Amazon Bedrock credentials, Knowledge Base ID, and Data Automation settings.
 - **Seamless Integration**: The plugin is accessible under the “Plugins” section of Moodle’s admin panel for easy management.
 
 ### RAG Integration
@@ -49,24 +49,24 @@ The plugin currently supports the following languages:
 ## Installation
 
 ### Download the Plugin:
-- Clone the repository: `git clone https://github.com/uteluq/moodle-block_uteluqchatbot.git`
-- Download the zip file from a release on GitHub: e.g, `https://github.com/uteluq/moodle-block_uteluqchatbot/archive/refs/tags/v0.5.6.zip`. 
-- Or download the zip file from the [Moodle Plugins Directory](https://moodle.org/plugins/block_uteluqchatbot).
+- Clone the repository: `git clone https://github.com/uteluq/moodle-block_alma_ai_tutor.git`
+- Download the zip file from a release on GitHub: e.g, `https://github.com/uteluq/moodle-block_alma_ai_tutor/archive/refs/tags/v0.5.6.zip`. 
+- Or download the zip file from the [Moodle Plugins Directory](https://moodle.org/plugins/block_alma_ai_tutor).
 
 ### Install in Moodle:
-- Copy the `uteluqchatbot` folder to the `/blocks/` directory of your Moodle installation.
+- Copy the `alma_ai_tutor` folder to the `/blocks/` directory of your Moodle installation.
 - Navigate to **Site Administration > Notifications** in Moodle to trigger the installation process.
 - Follow the on-screen instructions to complete the setup.
 
 ### Configure the Plugin:
-- Go to **Site Administration > Plugins > Blocks > uteluqchatbot**.
-- Enter the required API keys for Cohere, Adobe PDF Services, and Weaviate.
+- Go to **Site Administration > Plugins > Blocks > alma_ai_tutor**.
+- Enter the required Amazon Bedrock region, access key, secret key, model ID, and Knowledge Base ID.
 - Save the settings to activate the plugin.
 
 ### Add the Block to Course Pages:
 - To make the Chatbot visible on all course pages, go to a course and turn editing on.
-- In the **Add a block** menu, select **uteluqchatbot**.
-- After adding it, click on the block’s settings (gear icon), then choose **Configure uteluqchatbot block**.
+- In the **Add a block** menu, select **alma_ai_tutor**.
+- After adding it, click on the block’s settings (gear icon), then choose **Configure alma_ai_tutor block**.
 - Under **Where this block appears**, set **Display on page types** to **Any page**.
 - Save changes to apply the block site-wide within the course.
 
@@ -111,31 +111,26 @@ The plugin has been rigorously tested in both academic and AWS cloud environment
 - **Moodle Version**: Compatible with Moodle [specify version, e.g., 4.1+] (ensure compatibility with maintained versions as per [Moodle Releases](https://moodledev.io/general/releases)).
 - **Database**: Tested with MySQL and PostgreSQL, using Moodle’s [Data Manipulation API](https://moodledev.io/docs/5.1/apis/core/dml).
 - **API Services**:
-  - [Cohere] for text and embedding generation in vector DB integration.
-  - [Adobe PDF Services] for processing uploaded course materials.
-  - [Weaviate] for vector database storage and retrieval.
+  - [Amazon Bedrock Runtime] for model generation.
+  - [Amazon Bedrock Data Automation] for processing uploaded PDF materials.
+  - [Amazon Bedrock Knowledge Bases] for vector storage and retrieval.
 - **Server**: Deployable on standard Moodle servers or AWS for scalability.
 
 ## Web Services
 
 The Chatbot Moodle block plugin integrates several web services to support its functionality, as outlined in the project report. These services are configured via the plugin's administrative interface and are essential for processing course materials, generating responses, and enabling Retrieval-Augmented Generation (RAG). Below is a list of the web services used:
 
-- **[Cohere API](https://docs.cohere.com/cohere-documentation)**:
-  - **Purpose**: Powers the language generation component by providing model responses for user queries, supporting both RAG and non-RAG configurations.
-  - **Default Model**: Cohere is the default model used for text generation in the system.
-  - **Configuration**: Requires an API key to be specified in the plugin’s admin interface (see Figure 8).
+- **[Amazon Bedrock Runtime](https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html)**:
+  - **Purpose**: Powers language generation for user queries in both RAG and non-RAG modes.
+  - **Configuration**: Requires AWS region, access key, secret key, and model ID in plugin settings.
 
-- **[Cohere Embedding API](https://docs.cohere.com/cohere-documentation)**:
-  - **Purpose**: Creates embeddings for course content, enabling storage and retrieval in a vector database for RAG-based contextual responses.
-  - **Configuration**: Requires an API key entered in the plugin’s admin settings.
+- **[Amazon Bedrock Knowledge Bases](https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html)**:
+  - **Purpose**: Stores and retrieves vectorized course content for contextual responses.
+  - **Configuration**: Requires a Knowledge Base ID in plugin settings.
 
-- **[Adobe PDF Services](https://developer.adobe.com/document-services/apis/pdf-services)**:
-  - **Purpose**: Processes uploaded PDF course materials to extract content for response generation.
-  - **Configuration**: Requires a client ID and client secret entered in the plugin’s admin settings.
-
-- **Weaviate** ([Server Installation](https://weaviate.io/developers/weaviate/installation) | [Weaviate Cloud](https://weaviate.io/developers/wcs)):
-  - **Purpose**: Serves as the vector database for storing content embeddings, supporting the retrieval component of RAG for contextual responses.
-  - **Configuration**: Requires one or more API keys to be entered in the plugin’s admin settings. (Note: Multiple entries in the report may indicate an OCR error or distinct keys.)
+- **[Amazon Bedrock Data Automation](https://docs.aws.amazon.com/bedrock/latest/userguide/data-automation.html)**:
+  - **Purpose**: Processes uploaded PDF materials and extracts text for indexing.
+  - **Configuration**: Requires a Data Automation project ARN (and optionally blueprint ARN).
 
 Configuration is managed via **Site Administration > Plugins > Blocks > Chatbot** in Moodle.
 
@@ -143,23 +138,23 @@ Configuration is managed via **Site Administration > Plugins > Blocks > Chatbot*
 
 Contributions are welcome! To contribute:
 
-1. Fork the repository: [https://github.com/uteluq/moodle-block_uteluqchatbot](https://github.com/uteluq/moodle-block_uteluqchatbot).
+1. Fork the repository: [https://github.com/uteluq/moodle-block_alma_ai_tutor](https://github.com/uteluq/moodle-block_alma_ai_tutor).
 2. Create a feature branch: `git checkout -b feature/your-feature`.
 3. Commit changes: `git commit -m "Add your feature"`.
 4. Push to the branch: `git push origin feature/your-feature`.
 5. Open a pull request.
    
-Please adhere to Moodle’s [Coding Style](https://moodledev.io/general/development/policies/codingstyle) and submit issues via the [GitHub Issues page](https://github.com/uteluq/moodle-block_uteluqchatbot/issues).
+Please adhere to Moodle’s [Coding Style](https://moodledev.io/general/development/policies/codingstyle) and submit issues via the [GitHub Issues page](https://github.com/uteluq/moodle-block_alma_ai_tutor/issues).
 
 ## License
 
-This plugin is licensed under the GNU General Public License v3.0 or later (GPLv3+). See the [LICENSE](https://raw.githubusercontent.com/uteluq/moodle-block_uteluqchatbot/main/LICENSE) file for details.
+This plugin is licensed under the GNU General Public License v3.0 or later (GPLv3+). See the [LICENSE](https://raw.githubusercontent.com/uteluq/moodle-block_alma_ai_tutor/main/LICENSE) file for details.
 
 ## Support
 
 For issues, feature requests, or questions:
 
-- File an issue on the [GitHub Issues page](https://github.com/uteluq/moodle-block_uteluqchatbot/issues).
+- File an issue on the [GitHub Issues page](https://github.com/uteluq/moodle-block_alma_ai_tutor/issues).
 - Refer to the [Moodle Tracker](https://tracker.moodle.org/) for broader Moodle-related support.
 - Consult the [Moodle Documentation](https://docs.moodle.org/) or the plugin’s documentation for specific guidance.
 

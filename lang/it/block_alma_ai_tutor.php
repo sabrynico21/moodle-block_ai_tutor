@@ -2,9 +2,9 @@
 /**
  * @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  */
-$string['pluginname'] = 'uteluqchatbot';
-$string['uteluqchatbot:addinstance'] = 'Aggiungi un nuovo blocco chatbot';
-$string['uteluqchatbot:myaddinstance'] = 'Aggiungi un nuovo blocco chatbot alla Dashboard';
+$string['pluginname'] = 'alma_ai_tutor';
+$string['alma_ai_tutor:addinstance'] = 'Aggiungi un nuovo blocco chatbot';
+$string['alma_ai_tutor:myaddinstance'] = 'Aggiungi un nuovo blocco chatbot alla Dashboard';
 $string['weaviate_cohere_not_configured'] = 'La chiave API di Cohere non è configurata o non è valida. Si prega di controllare le impostazioni.';
 $string['adobe_pdf_client_id'] = 'ID Cliente Adobe PDF Services';
 $string['adobe_pdf_client_id_desc'] = 'Inserisci il tuo ID Cliente Adobe PDF Services qui.';
@@ -19,7 +19,7 @@ $string['cohere_embedding_api_key_desc'] = 'Inserisci la tua chiave API per il M
 $string['test_api_keys'] = 'Testa Chiavi API';
 $string['test_api_keys_desc'] = 'Clicca per testare le chiavi API configurate';
 $string['test_api_keys_label'] = 'Testa Chiavi';
-$string['uteluqchatbot:manage'] = 'Gestisci impostazioni chatbot';
+$string['alma_ai_tutor:manage'] = 'Gestisci impostazioni chatbot';
 $string['adobe_invalid_credentials'] = 'L\'ID cliente o il segreto cliente per Adobe PDF Services è invalido.';
 $string['adobe_valid_credentials'] = 'L\'ID cliente e il segreto cliente per Adobe PDF Services sono validi e funzionali.';
 $string['weaviate_connection_error'] = 'Errore di connessione a Weaviate: ';
@@ -188,18 +188,18 @@ $string['response_type_debug'] = 'Tipo di risposta:';
 $string['upload_error_details_debug'] = 'Dettagli errore di caricamento:';
 $string['error_object_debug'] = 'Oggetto errore:';
 $string['raw_server_response_debug'] = 'Risposta server grezza:';
-$string['privacy:metadata:block_uteluqchatbot_conversations'] = 'Informazioni sulle conversazioni degli utenti con il chatbot';
-$string['privacy:metadata:block_uteluqchatbot_conversations:userid'] = 'L\'ID dell\'utente che ha creato la conversazione';
-$string['privacy:metadata:block_uteluqchatbot_conversations:question'] = 'La domanda posta dall\'utente';
-$string['privacy:metadata:block_uteluqchatbot_conversations:answer'] = 'La risposta fornita dal chatbot';
-$string['privacy:metadata:block_uteluqchatbot_conversations:timecreated'] = 'Il momento in cui è stata creata la conversazione';
-$string['privacy:metadata:block_uteluqchatbot_conversations:courseid'] = 'L\'ID del corso in cui è avvenuta la conversazione';
+$string['privacy:metadata:block_alma_ai_tutor_conversations'] = 'Informazioni sulle conversazioni degli utenti con il chatbot';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:userid'] = 'L\'ID dell\'utente che ha creato la conversazione';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:question'] = 'La domanda posta dall\'utente';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:answer'] = 'La risposta fornita dal chatbot';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:timecreated'] = 'Il momento in cui è stata creata la conversazione';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:courseid'] = 'L\'ID del corso in cui è avvenuta la conversazione';
 
-$string['privacy:metadata:block_uteluqchatbot_prompts'] = 'Informazioni sui prompt personalizzati creati dagli utenti';
-$string['privacy:metadata:block_uteluqchatbot_prompts:prompt'] = 'Il testo del prompt personalizzato creato dall\'utente';
-$string['privacy:metadata:block_uteluqchatbot_prompts:userid'] = 'L\'ID dell\'utente che ha creato il prompt';
-$string['privacy:metadata:block_uteluqchatbot_prompts:courseid'] = 'L\'ID del corso in cui è stato creato il prompt';
-$string['privacy:metadata:block_uteluqchatbot_prompts:timecreated'] = 'Il momento in cui è stato creato il prompt';
+$string['privacy:metadata:block_alma_ai_tutor_prompts'] = 'Informazioni sui prompt personalizzati creati dagli utenti';
+$string['privacy:metadata:block_alma_ai_tutor_prompts:prompt'] = 'Il testo del prompt personalizzato creato dall\'utente';
+$string['privacy:metadata:block_alma_ai_tutor_prompts:userid'] = 'L\'ID dell\'utente che ha creato il prompt';
+$string['privacy:metadata:block_alma_ai_tutor_prompts:courseid'] = 'L\'ID del corso in cui è stato creato il prompt';
+$string['privacy:metadata:block_alma_ai_tutor_prompts:timecreated'] = 'Il momento in cui è stato creato il prompt';
 $string['privacy:metadata:cohere_api'] = 'Dati inviati al servizio Cohere API per risposte chat alimentate da IA';
 $string['privacy:metadata:cohere_api:question'] = 'La domanda dell\'utente inviata a Cohere API per l\'elaborazione';
 $string['privacy:metadata:cohere_api:courseid'] = 'Le informazioni di contesto del corso inviate a Cohere API';

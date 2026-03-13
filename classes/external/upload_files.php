@@ -4,7 +4,7 @@
  * @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  */
 
-namespace block_uteluqchatbot\external;
+namespace block_alma_ai_tutor\external;
 
 use external_api;
 use external_function_parameters;
@@ -21,16 +21,33 @@ require_once($CFG->libdir . '/externallib.php');
 class upload_files extends external_api {
 
     /**
+     * Ensure response messages are valid UTF-8 and safe for WS return validation.
+     *
+     * @param string $message
+     * @return string
+     */
+    private static function sanitize_ws_message(string $message): string {
+        $clean = @iconv('UTF-8', 'UTF-8//IGNORE', (string)$message);
+        if ($clean === false) {
+            $clean = (string)$message;
+        }
+
+        // Remove ASCII control chars that can break external response validation.
+        $clean = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $clean);
+        return trim((string)$clean);
+    }
+
+    /**
      * Returns description of method parameters
      * @return external_function_parameters
      */
     public static function execute_parameters() {
         return new external_function_parameters([
-            'courseid' => new external_value(PARAM_INT, get_string('course_id', 'block_uteluqchatbot')),
+            'courseid' => new external_value(PARAM_INT, get_string('course_id', 'block_alma_ai_tutor')),
             'files' => new external_multiple_structure(
                 new external_single_structure([
-                    'filename' => new external_value(PARAM_TEXT, get_string('file_name', 'block_uteluqchatbot')),
-                    'filecontent' => new external_value(PARAM_RAW, get_string('file_content_base64', 'block_uteluqchatbot')),
+                    'filename' => new external_value(PARAM_TEXT, get_string('file_name', 'block_alma_ai_tutor')),
+                    'filecontent' => new external_value(PARAM_RAW, get_string('file_content_base64', 'block_alma_ai_tutor')),
                 ])
             )
         ]);
@@ -100,49 +117,58 @@ class upload_files extends external_api {
                     is_enrolled($context, $USER->id)) {
                     // OK
                 } else {
-                    throw new Exception(get_string('insufficient_permissions', 'block_uteluqchatbot'));
+                    throw new Exception(get_string('insufficient_permissions', 'block_alma_ai_tutor'));
                 }
             }
 
-            // Configuration of API keys and Weaviate URL
-            $apiUrl = get_config('block_uteluqchatbot', 'weaviate_api_url');
-            $apiKey = get_config('block_uteluqchatbot', 'weaviate_api_key');
-            $cohereApiKey = get_config('block_uteluqchatbot', 'cohere_embedding_api_key');
+            // Bedrock configuration.
+            $bedrock_region = trim((string)get_config('block_alma_ai_tutor', 'bedrock_region'));
+            $bedrock_access_key = trim((string)get_config('block_alma_ai_tutor', 'bedrock_access_key'));
+            $bedrock_secret_key = trim((string)get_config('block_alma_ai_tutor', 'bedrock_secret_key'));
+            $bedrock_kb_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_knowledge_base_id'));
+            $bedrock_model_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_chat_model_id'));
+            $bedrock_data_source_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_data_source_id'));
+            $bedrock_s3_bucket = trim((string)get_config('block_alma_ai_tutor', 'bedrock_s3_bucket'));
 
             // Validate required configurations
-            if (empty($apiUrl) || empty($apiKey) || empty($cohereApiKey)) {
-                throw new Exception(get_string('missing_api_configuration', 'block_uteluqchatbot'));
+            if (empty($bedrock_region) || empty($bedrock_access_key) || empty($bedrock_secret_key) || empty($bedrock_kb_id)) {
+                throw new Exception(get_string('missing_api_configuration', 'block_alma_ai_tutor'));
+            }
+
+            if (empty($bedrock_s3_bucket)) {
+                throw new Exception('S3 bucket is not configured. Set "S3 bucket name for Knowledge Base storage" in plugin settings.');
+            }
+
+            if (empty($bedrock_data_source_id)) {
+                throw new Exception('Knowledge Base data source ID is not configured. Set "Amazon Bedrock data source ID" in plugin settings.');
             }
 
             // Check if classes exist
-            if (!class_exists('\block_uteluqchatbot\weaviate_connector')) {
-                throw new Exception(get_string('weaviate_connector_not_found', 'block_uteluqchatbot'));
+            if (!class_exists('\block_alma_ai_tutor\weaviate_connector')) {
+                throw new Exception(get_string('weaviate_connector_not_found', 'block_alma_ai_tutor'));
             }
 
-            // Initialize WeaviateConnector object
-            $connector = new \block_uteluqchatbot\weaviate_connector($apiUrl, $apiKey, $cohereApiKey);
+            // Initialize Bedrock connector object.
+            $connector = new \block_alma_ai_tutor\weaviate_connector(
+                $bedrock_region,
+                $bedrock_access_key,
+                $bedrock_secret_key,
+                $bedrock_kb_id,
+                !empty($bedrock_model_id) ? $bedrock_model_id : 'cohere.command-r-v1:0',
+                $bedrock_data_source_id,
+                $bedrock_s3_bucket
+            );
 
-            $courseName = get_string('collection_prefix', 'block_uteluqchatbot') . $params['courseid'];
-            
-            // Delete existing collection and recreate it
-            $connector->delete_collection($courseName);
-            
-            $checkIfCreated = $connector->collection_exists($courseName);
-
-            // Create the collection
-            if (!$connector->create_collection($courseName)) {
-                $error = $connector->get_last_error();
-                throw new Exception(get_string('error_creating_collection', 'block_uteluqchatbot') . ($error ? $error : get_string('unknown_error', 'block_uteluqchatbot')));
-            }
+            $courseName = get_string('collection_prefix', 'block_alma_ai_tutor') . $params['courseid'];
 
             // Create or get a temporary directory for the plugin
-            $temppath = make_temp_directory('block_uteluqchatbot');
+            $temppath = make_temp_directory('block_alma_ai_tutor');
             $uploadDir = $temppath . '/uploads/';
 
             // If the uploads subdirectory doesn't exist, create it
             if (!file_exists($uploadDir)) {
                 if (!mkdir($uploadDir, 0777, true)) {
-                    throw new Exception(get_string('failed_create_upload_directory', 'block_uteluqchatbot'));
+                    throw new Exception(get_string('failed_create_upload_directory', 'block_alma_ai_tutor'));
                 }
             }
 
@@ -153,18 +179,18 @@ class upload_files extends external_api {
                 try {
                     // Validate filename
                     if (empty($file['filename'])) {
-                        throw new Exception(get_string('empty_filename', 'block_uteluqchatbot'));
+                        throw new Exception(get_string('empty_filename', 'block_alma_ai_tutor'));
                     }
 
                     // Check if file type is supported
                     if (!self::is_pdf($file['filename']) && !self::is_text_file($file['filename'])) {
-                        throw new Exception(get_string('unsupported_file_type', 'block_uteluqchatbot') . $file['filename']);
+                        throw new Exception(get_string('unsupported_file_type', 'block_alma_ai_tutor') . $file['filename']);
                     }
 
                     // Decode base64 content
                     $fileContent = base64_decode($file['filecontent']);
                     if ($fileContent === false) {
-                        throw new Exception(get_string('invalid_file_data', 'block_uteluqchatbot') . $file['filename']);
+                        throw new Exception(get_string('invalid_file_data', 'block_alma_ai_tutor') . $file['filename']);
                     }
 
                     // Generate unique filename
@@ -173,54 +199,27 @@ class upload_files extends external_api {
 
                     // Save file temporarily
                     if (file_put_contents($destination, $fileContent) === false) {
-                        throw new Exception(get_string('failed_save_file', 'block_uteluqchatbot') . $file['filename']);
+                        throw new Exception(get_string('failed_save_file', 'block_alma_ai_tutor') . $file['filename']);
                     }
 
-                    $extractedText = '';
                     $destinationTxt = '';
 
                     // Process based on file type
                     if (self::is_pdf($file['filename'])) {
-                        // PDF processing
-                        $adobe_pdf_client_id = get_config('block_uteluqchatbot', 'adobe_pdf_client_id');
-                        $adobe_pdf_client_secret = get_config('block_uteluqchatbot', 'adobe_pdf_client_secret');
-
-                        if (empty($adobe_pdf_client_id) || empty($adobe_pdf_client_secret)) {
-                            throw new Exception(get_string('adobe_pdf_credentials_not_configured', 'block_uteluqchatbot'));
-                        }
-
-                        // Check if PDF extractor class exists
-                        if (!class_exists('\block_uteluqchatbot\pdf_extract_api')) {
-                            throw new Exception(get_string('pdf_extractor_not_found', 'block_uteluqchatbot'));
-                        }
-
-                        $pdfExtractor = new \block_uteluqchatbot\pdf_extract_api($adobe_pdf_client_id, $adobe_pdf_client_secret);
-                        $extractedText = $pdfExtractor->process_pdf($destination);
-
-                        if (empty($extractedText)) {
-                            throw new Exception(get_string('failed_extract_pdf_text', 'block_uteluqchatbot') . $file['filename']);
-                        }
-
-                        // Generate a unique name for the text file
-                        $newFileTxtName = uniqid('file_', true) . '-' . $file['filename'] . '.txt';
-                        $destinationTxt = $uploadDir . $newFileTxtName;
-
-                        if (file_put_contents($destinationTxt, $extractedText) === false) {
-                            throw new Exception(get_string('failed_save_extracted_text', 'block_uteluqchatbot') . $file['filename']);
-                        }
+                        // Use KB parser configured in AWS (e.g., Anthropic Sonnet) by uploading raw PDF.
+                        $destinationTxt = $destination;
 
                     } else if (self::is_text_file($file['filename'])) {
-                        // Text file processing - use the file directly
+                        // Text file processing — use the file directly.
                         $destinationTxt = $destination;
-                        $extractedText = $fileContent;
                     }
 
                     // Index the text file
-                    $indexed = $connector->index_text_file($destinationTxt, $courseName, $courseName);
+                    $indexed = $connector->index_text_file($destinationTxt, $courseName, (string)$params['courseid']);
 
                     if (!$indexed) {
                         $error = $connector->get_last_error();
-                        throw new Exception(get_string('error_indexing_file_unknown', 'block_uteluqchatbot') . $file['filename'] . ': ' . ($error ? $error : get_string('unknown_error', 'block_uteluqchatbot')));
+                        throw new Exception(get_string('error_indexing_file_unknown', 'block_alma_ai_tutor') . $file['filename'] . ': ' . ($error ? $error : get_string('unknown_error', 'block_alma_ai_tutor')));
                     }
 
                     // Clean up temporary files
@@ -248,20 +247,20 @@ class upload_files extends external_api {
 
             // Return results
             if ($processedFiles > 0) {
-                $message = $processedFiles . get_string('files_indexed_successfully', 'block_uteluqchatbot');
+                $message = $processedFiles . get_string('files_indexed_successfully', 'block_alma_ai_tutor');
                 if (!empty($errors)) {
-                    $message .= get_string('errors_occurred', 'block_uteluqchatbot') . implode('; ', $errors);
+                    $message .= get_string('errors_occurred', 'block_alma_ai_tutor') . implode('; ', $errors);
                 }
                 
                 return [
                     'success' => true,
-                    'message' => $message,
+                    'message' => self::sanitize_ws_message($message),
                     'processedfiles' => $processedFiles
                 ];
             } else {
                 return [
                     'success' => false,
-                    'message' => get_string('no_files_processed', 'block_uteluqchatbot') . implode('; ', $errors),
+                    'message' => self::sanitize_ws_message(get_string('no_files_processed', 'block_alma_ai_tutor') . implode('; ', $errors)),
                     'processedfiles' => 0
                 ];
             }
@@ -269,7 +268,7 @@ class upload_files extends external_api {
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => self::sanitize_ws_message((string)$e->getMessage()),
                 'processedfiles' => 0
             ];
         } finally {
@@ -286,9 +285,9 @@ class upload_files extends external_api {
      */
     public static function execute_returns() {
         return new external_single_structure([
-            'success' => new external_value(PARAM_BOOL, get_string('operation_successful', 'block_uteluqchatbot')),
-            'message' => new external_value(PARAM_TEXT, get_string('response_message', 'block_uteluqchatbot')),
-            'processedfiles' => new external_value(PARAM_INT, get_string('processed_files_count', 'block_uteluqchatbot'))
+            'success' => new external_value(PARAM_BOOL, get_string('operation_successful', 'block_alma_ai_tutor')),
+            'message' => new external_value(PARAM_RAW, get_string('response_message', 'block_alma_ai_tutor')),
+            'processedfiles' => new external_value(PARAM_INT, get_string('processed_files_count', 'block_alma_ai_tutor'))
         ]);
     }
 }

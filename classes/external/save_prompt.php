@@ -4,7 +4,7 @@
  * @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  */
 
-namespace block_uteluqchatbot\external;
+namespace block_alma_ai_tutor\external;
 
 use external_api;
 use external_function_parameters;
@@ -68,7 +68,7 @@ class save_prompt extends external_api
 
         try {
             // Check if a prompt already exists for this user
-            $existing_prompt = $DB->get_record('block_uteluqchatbot_prompts', ['userid' => $params['userid']]);
+            $existing_prompt = $DB->get_record('block_alma_ai_tutor_prompts', ['userid' => $params['userid']]);
 
             $record = new \stdClass();
             $record->prompt = $params['prompttext'];
@@ -79,22 +79,22 @@ class save_prompt extends external_api
             if ($existing_prompt) {
                 // Update the existing prompt
                 $record->id = $existing_prompt->id;
-                $DB->update_record('block_uteluqchatbot_prompts', $record);
+                $DB->update_record('block_alma_ai_tutor_prompts', $record);
             } else {
                 // Create a new prompt
                 $record->timecreated = time();
-                $DB->insert_record('block_uteluqchatbot_prompts', $record);
+                $DB->insert_record('block_alma_ai_tutor_prompts', $record);
             }
 
             return [
                 'status' => 'success',
-                'message' => get_string('prompt_saved_successfully', 'block_uteluqchatbot')
+                'message' => get_string('prompt_saved_successfully', 'block_alma_ai_tutor')
             ];
 
         } catch (dml_exception $e) {
             return [
                 'status' => 'error',
-                'error' => get_string('database_write_error', 'block_uteluqchatbot') . $e->getMessage()
+                'error' => get_string('database_write_error', 'block_alma_ai_tutor') . $e->getMessage()
             ];
         } catch (\Exception $e) {
             return [

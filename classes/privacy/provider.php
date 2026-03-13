@@ -15,14 +15,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Privacy Subsystem implementation for block_uteluqchatbot.
+ * Privacy Subsystem implementation for block_alma_ai_tutor.
  *
- * @package    block_uteluqchatbot
+ * @package    block_alma_ai_tutor
  * @copyright  2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace block_uteluqchatbot\privacy;
+namespace block_alma_ai_tutor\privacy;
 
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\approved_contextlist;
@@ -51,60 +51,60 @@ class provider implements
      */
     public static function get_metadata(collection $items): collection {
         $items->add_database_table(
-            'block_uteluqchatbot_conversations',
+            'block_alma_ai_tutor_conversations',
             [
-                'userid' => 'privacy:metadata:block_uteluqchatbot_conversations:userid',
-                'question' => 'privacy:metadata:block_uteluqchatbot_conversations:question',
-                'answer' => 'privacy:metadata:block_uteluqchatbot_conversations:answer',
-                'timecreated' => 'privacy:metadata:block_uteluqchatbot_conversations:timecreated',
-                'courseid' => 'privacy:metadata:block_uteluqchatbot_conversations:courseid',
+                'userid' => 'privacy:metadata:block_alma_ai_tutor_conversations:userid',
+                'question' => 'privacy:metadata:block_alma_ai_tutor_conversations:question',
+                'answer' => 'privacy:metadata:block_alma_ai_tutor_conversations:answer',
+                'timecreated' => 'privacy:metadata:block_alma_ai_tutor_conversations:timecreated',
+                'courseid' => 'privacy:metadata:block_alma_ai_tutor_conversations:courseid',
             ],
-            'privacy:metadata:block_uteluqchatbot_conversations'
+            'privacy:metadata:block_alma_ai_tutor_conversations'
         );
 
         $items->add_database_table(
-            'block_uteluqchatbot_prompts',
+            'block_alma_ai_tutor_prompts',
             [
-                'prompt' => 'privacy:metadata:block_uteluqchatbot_prompts:prompt',
-                'userid' => 'privacy:metadata:block_uteluqchatbot_prompts:userid',
-                'courseid' => 'privacy:metadata:block_uteluqchatbot_prompts:courseid',
-                'timecreated' => 'privacy:metadata:block_uteluqchatbot_prompts:timecreated',
+                'prompt' => 'privacy:metadata:block_alma_ai_tutor_prompts:prompt',
+                'userid' => 'privacy:metadata:block_alma_ai_tutor_prompts:userid',
+                'courseid' => 'privacy:metadata:block_alma_ai_tutor_prompts:courseid',
+                'timecreated' => 'privacy:metadata:block_alma_ai_tutor_prompts:timecreated',
             ],
-            'privacy:metadata:block_uteluqchatbot_prompts'
+            'privacy:metadata:block_alma_ai_tutor_prompts'
         );
 
-        // External service Cohere API
+        // External service Amazon Bedrock Runtime (generation).
         $items->add_external_location_link(
-            'cohere_api',
+            'bedrock_runtime',
             [
-                'question' => 'privacy:metadata:cohere_api:question',
-                'courseid' => 'privacy:metadata:cohere_api:courseid',
-                'prompt' => 'privacy:metadata:cohere_api:prompt',
+                'question' => 'privacy:metadata:bedrock_runtime:question',
+                'courseid' => 'privacy:metadata:bedrock_runtime:courseid',
+                'prompt' => 'privacy:metadata:bedrock_runtime:prompt',
             ],
-            'privacy:metadata:cohere_api'
+            'privacy:metadata:bedrock_runtime'
         );
 
-        // External service Weaviate Cloud (vector database)
+        // External service Amazon Bedrock Knowledge Base (vector database).
         $items->add_external_location_link(
-            'weaviate_cloud',
+            'bedrock_knowledge_base',
             [
-                'document_content' => 'privacy:metadata:weaviate_cloud:document_content',
-                'embeddings' => 'privacy:metadata:weaviate_cloud:embeddings',
-                'courseid' => 'privacy:metadata:weaviate_cloud:courseid',
-                'metadata' => 'privacy:metadata:weaviate_cloud:metadata',
+                'document_content' => 'privacy:metadata:bedrock_knowledge_base:document_content',
+                'embeddings' => 'privacy:metadata:bedrock_knowledge_base:embeddings',
+                'courseid' => 'privacy:metadata:bedrock_knowledge_base:courseid',
+                'metadata' => 'privacy:metadata:bedrock_knowledge_base:metadata',
             ],
-            'privacy:metadata:weaviate_cloud'
+            'privacy:metadata:bedrock_knowledge_base'
         );
 
-        // External service Adobe PDF Services API
+        // External service Amazon Bedrock Data Automation.
         $items->add_external_location_link(
-            'adobe_pdf_api',
+            'bedrock_data_automation',
             [
-                'pdf_content' => 'privacy:metadata:adobe_pdf_api:pdf_content',
-                'filename' => 'privacy:metadata:adobe_pdf_api:filename',
-                'extracted_text' => 'privacy:metadata:adobe_pdf_api:extracted_text',
+                'pdf_content' => 'privacy:metadata:bedrock_data_automation:pdf_content',
+                'filename' => 'privacy:metadata:bedrock_data_automation:filename',
+                'extracted_text' => 'privacy:metadata:bedrock_data_automation:extracted_text',
             ],
-            'privacy:metadata:adobe_pdf_api'
+            'privacy:metadata:bedrock_data_automation'
         );
         return $items;
     }
@@ -122,7 +122,7 @@ class provider implements
         $sql = "SELECT DISTINCT c.id
                   FROM {context} c
                   JOIN {course} co ON co.id = c.instanceid AND c.contextlevel = :contextlevel
-                  JOIN {block_uteluqchatbot_conversations} bc ON bc.courseid = co.id
+                  JOIN {block_alma_ai_tutor_conversations} bc ON bc.courseid = co.id
                  WHERE bc.userid = :userid";
 
         $contextlist->add_from_sql($sql, [
@@ -134,7 +134,7 @@ class provider implements
         $sql = "SELECT DISTINCT c.id
                   FROM {context} c
                   JOIN {course} co ON co.id = c.instanceid AND c.contextlevel = :contextlevel
-                  JOIN {block_uteluqchatbot_prompts} bp ON bp.courseid = co.id
+                  JOIN {block_alma_ai_tutor_prompts} bp ON bp.courseid = co.id
                  WHERE bp.userid = :userid";
 
         $contextlist->add_from_sql($sql, [
@@ -159,14 +159,14 @@ class provider implements
 
         // Get users with conversations in this course.
         $sql = "SELECT bc.userid
-                  FROM {block_uteluqchatbot_conversations} bc
+                  FROM {block_alma_ai_tutor_conversations} bc
                  WHERE bc.courseid = :courseid";
 
         $userlist->add_from_sql('userid', $sql, ['courseid' => $context->instanceid]);
 
         // Get users with prompts in this course.
         $sql = "SELECT bp.userid
-                  FROM {block_uteluqchatbot_prompts} bp
+                  FROM {block_alma_ai_tutor_prompts} bp
                  WHERE bp.courseid = :courseid";
 
         $userlist->add_from_sql('userid', $sql, ['courseid' => $context->instanceid]);
@@ -193,7 +193,7 @@ class provider implements
 
             // Export conversations.
             $sql = "SELECT bc.question, bc.answer, bc.timecreated
-                      FROM {block_uteluqchatbot_conversations} bc
+                      FROM {block_alma_ai_tutor_conversations} bc
                      WHERE bc.userid = :userid AND bc.courseid = :courseid
                   ORDER BY bc.timecreated ASC";
 
@@ -213,14 +213,14 @@ class provider implements
                 }
 
                 writer::with_context($context)->export_data(
-                    [get_string('pluginname', 'block_uteluqchatbot'), get_string('conversations', 'block_uteluqchatbot')],
+                    [get_string('pluginname', 'block_alma_ai_tutor'), get_string('conversations', 'block_alma_ai_tutor')],
                     (object) ['conversations' => $conversationdata]
                 );
             }
 
             // Export prompts.
             $sql = "SELECT bp.prompt, bp.timecreated
-                      FROM {block_uteluqchatbot_prompts} bp
+                      FROM {block_alma_ai_tutor_prompts} bp
                      WHERE bp.userid = :userid AND bp.courseid = :courseid
                   ORDER BY bp.timecreated ASC";
 
@@ -239,7 +239,7 @@ class provider implements
                 }
 
                 writer::with_context($context)->export_data(
-                    [get_string('pluginname', 'block_uteluqchatbot'), get_string('prompts', 'block_uteluqchatbot')],
+                    [get_string('pluginname', 'block_alma_ai_tutor'), get_string('prompts', 'block_alma_ai_tutor')],
                     (object) ['prompts' => $promptdata]
                 );
             }
@@ -258,8 +258,8 @@ class provider implements
             return;
         }
 
-        $DB->delete_records('block_uteluqchatbot_conversations', ['courseid' => $context->instanceid]);
-        $DB->delete_records('block_uteluqchatbot_prompts', ['courseid' => $context->instanceid]);
+        $DB->delete_records('block_alma_ai_tutor_conversations', ['courseid' => $context->instanceid]);
+        $DB->delete_records('block_alma_ai_tutor_prompts', ['courseid' => $context->instanceid]);
     }
 
     /**
@@ -281,12 +281,12 @@ class provider implements
                 continue;
             }
 
-            $DB->delete_records('block_uteluqchatbot_conversations', [
+            $DB->delete_records('block_alma_ai_tutor_conversations', [
                 'userid' => $user->id,
                 'courseid' => $context->instanceid
             ]);
 
-            $DB->delete_records('block_uteluqchatbot_prompts', [
+            $DB->delete_records('block_alma_ai_tutor_prompts', [
                 'userid' => $user->id,
                 'courseid' => $context->instanceid
             ]);
@@ -315,12 +315,12 @@ class provider implements
 
         list($usersql, $userparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
 
-        $DB->delete_records_select('block_uteluqchatbot_conversations',
+        $DB->delete_records_select('block_alma_ai_tutor_conversations',
             "courseid = :courseid AND userid {$usersql}",
             array_merge(['courseid' => $context->instanceid], $userparams)
         );
 
-        $DB->delete_records_select('block_uteluqchatbot_prompts',
+        $DB->delete_records_select('block_alma_ai_tutor_prompts',
             "courseid = :courseid AND userid {$usersql}",
             array_merge(['courseid' => $context->instanceid], $userparams)
         );

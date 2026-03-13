@@ -3,16 +3,16 @@
 /**
  * Chatbot block class for Moodle.
  *
- * @package    block_uteluqchatbot
+ * @package    block_alma_ai_tutor
  * @copyright  2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-class block_uteluqchatbot extends block_base
+class block_alma_ai_tutor extends block_base
 {
     public function init()
     {
-        $this->title = get_string('pluginname', 'block_uteluqchatbot');
+        $this->title = get_string('pluginname', 'block_alma_ai_tutor');
     }
 
     public function applicable_formats()
@@ -49,10 +49,10 @@ class block_uteluqchatbot extends block_base
         $coursename = $PAGE->course->fullname;
 
         // Default prompt with dynamic course name
-        $default_prompt = get_string('default_prompt', 'block_uteluqchatbot', $coursename);
+        $default_prompt = get_string('default_prompt', 'block_alma_ai_tutor', $coursename);
 
         // Get the existing prompt for the user
-        $existing_prompt = $DB->get_record('block_uteluqchatbot_prompts', array('userid' => $USER->id, 'courseid' => $COURSE->id));
+        $existing_prompt = $DB->get_record('block_alma_ai_tutor_prompts', array('userid' => $USER->id, 'courseid' => $COURSE->id));
 
         // Check if the user is a teacher
         $coursecontext = context_course::instance($COURSE->id);
@@ -70,23 +70,23 @@ class block_uteluqchatbot extends block_base
         ];
 
         // Load templates
-        $this->content->text = $OUTPUT->render_from_template('block_uteluqchatbot/uteluqchatbot', $templateData);
-        $this->content->text .= $OUTPUT->render_from_template('block_uteluqchatbot/prompt_modal', $templateData);
-        $this->content->text .= $OUTPUT->render_from_template('block_uteluqchatbot/load-course-modal', $templateData);
+        $this->content->text = $OUTPUT->render_from_template('block_alma_ai_tutor/alma_ai_tutor', $templateData);
+        $this->content->text .= $OUTPUT->render_from_template('block_alma_ai_tutor/prompt_modal', $templateData);
+        $this->content->text .= $OUTPUT->render_from_template('block_alma_ai_tutor/load-course-modal', $templateData);
 
-        $PAGE->requires->js_call_amd('block_uteluqchatbot/uteluqchatbot', 'init', [
+        $PAGE->requires->js_call_amd('block_alma_ai_tutor/alma_ai_tutor', 'init', [
             $CFG->wwwroot,
             sesskey(),
             $USER->id,
             $COURSE->id
         ]);
-        $PAGE->requires->js_call_amd('block_uteluqchatbot/fileupload', 'init');
+        $PAGE->requires->js_call_amd('block_alma_ai_tutor/fileupload', 'init');
 
         // Path to the CSS file within the plugin directory
-        $cssFile = 'block_uteluqchatbot/styles.css';
+        $cssFile = 'block_alma_ai_tutor/styles.css';
 
         // Add the CSS file to the page using Moodle's API
-        $PAGE->requires->css(new moodle_url('/blocks/uteluqchatbot/' . $cssFile));
+        $PAGE->requires->css(new moodle_url('/blocks/alma_ai_tutor/' . $cssFile));
 
         $this->content->footer = '';
 
