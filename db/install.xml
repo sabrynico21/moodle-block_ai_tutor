@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<XMLDB PATH="blocks/uteluqchatbot/db" VERSION="20250129" COMMENT="XMLDB file for chatbot block">
+<XMLDB PATH="blocks/alma_ai_tutor/db" VERSION="20250129" COMMENT="XMLDB file for chatbot block">
     <!--
       @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
     -->
     <TABLES>
-        <TABLE NAME="block_uteluqchatbot_conversations" COMMENT="Stores chat conversations">
+        <TABLE NAME="block_alma_ai_tutor_conversations" COMMENT="Stores chat conversations">
             <FIELDS>
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
                 <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -19,7 +19,7 @@
                 <KEY NAME="courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
             </KEYS>
         </TABLE>
-        <TABLE NAME="block_uteluqchatbot_prompts" COMMENT="Table to store custom prompts">
+        <TABLE NAME="block_alma_ai_tutor_prompts" COMMENT="Table to store custom prompts">
             <FIELDS>
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" />
                 <FIELD NAME="prompt" TYPE="text" NOTNULL="true" SEQUENCE="false" />

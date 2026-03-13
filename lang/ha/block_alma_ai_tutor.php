@@ -3,10 +3,10 @@
  * @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  */
 
-$string['pluginname'] = 'uteluqchatbot';
-$string['uteluqchatbot:addinstance'] = 'Ƙara sabon block na uteluqchatbot';
-$string['uteluqchatbot:myaddinstance'] = 'Ƙara sabon block na uteluqchatbot a Dashboard';
-$string['uteluqchatbot:manage'] = 'Sarrafa saitunan chatbot';
+$string['pluginname'] = 'alma_ai_tutor';
+$string['alma_ai_tutor:addinstance'] = 'Ƙara sabon block na alma_ai_tutor';
+$string['alma_ai_tutor:myaddinstance'] = 'Ƙara sabon block na alma_ai_tutor a Dashboard';
+$string['alma_ai_tutor:manage'] = 'Sarrafa saitunan chatbot';
 $string['weaviate_cohere_not_configured'] = 'Makullin Cohere API ba a saita shi ba ko kuwa ba daidai ba ne. Don Allah duba saituna.';
 $string['adobe_pdf_client_id'] = 'ID Abokin Ciniki na Adobe PDF Service';
 $string['adobe_pdf_client_id_desc'] = 'Shigar da ID ɗin Abokin Ciniki na Adobe PDF Service ɗinku nan.';

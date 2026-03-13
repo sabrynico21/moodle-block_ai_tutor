@@ -4,7 +4,7 @@
  * @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  */
 
-namespace block_uteluqchatbot\external;
+namespace block_alma_ai_tutor\external;
 
 use external_api;
 use external_function_parameters;
@@ -74,26 +74,31 @@ class send_question extends external_api
             $question = self::sanitize_chatbot_input(trim($params['question']));
 
             if (empty($question)) {
-                throw new invalid_parameter_exception(get_string('invalid_question_after_sanitize', 'block_uteluqchatbot'));
+                throw new invalid_parameter_exception(get_string('invalid_question_after_sanitize', 'block_alma_ai_tutor'));
             }
 
-            // Get configuration
-            $weaviate_api_url = get_config('block_uteluqchatbot', 'weaviate_api_url');
-            if (strpos($weaviate_api_url, 'https://') !== 0) {
-                $weaviate_api_url = 'https://' . $weaviate_api_url;
-            }
-            $weaviate_api_key = get_config('block_uteluqchatbot', 'weaviate_api_key');
-            $cohere_api_key = get_config('block_uteluqchatbot', 'cohere_embedding_api_key');
+            // Get Bedrock configuration.
+            $bedrock_region = trim((string)get_config('block_alma_ai_tutor', 'bedrock_region'));
+            $bedrock_access_key = trim((string)get_config('block_alma_ai_tutor', 'bedrock_access_key'));
+            $bedrock_secret_key = trim((string)get_config('block_alma_ai_tutor', 'bedrock_secret_key'));
+            $bedrock_kb_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_knowledge_base_id'));
+            $bedrock_model_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_chat_model_id'));
+            $bedrock_data_source_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_data_source_id'));
+            $bedrock_s3_bucket = trim((string)get_config('block_alma_ai_tutor', 'bedrock_s3_bucket'));
 
-            if (empty($weaviate_api_url) || empty($cohere_api_key)) {
-                throw new \moodle_exception('weaviate_cohere_not_configured', 'block_uteluqchatbot');
+            if (empty($bedrock_region) || empty($bedrock_access_key) || empty($bedrock_secret_key) || empty($bedrock_kb_id)) {
+                throw new \moodle_exception('bedrock_not_configured', 'block_alma_ai_tutor');
             }
 
             // Initialize connector
-            $weaviate_connector = new \block_uteluqchatbot\weaviate_connector(
-                $weaviate_api_url,
-                $weaviate_api_key,
-                $cohere_api_key
+            $weaviate_connector = new \block_alma_ai_tutor\weaviate_connector(
+                $bedrock_region,
+                $bedrock_access_key,
+                $bedrock_secret_key,
+                $bedrock_kb_id,
+                !empty($bedrock_model_id) ? $bedrock_model_id : 'cohere.command-r-v1:0',
+                !empty($bedrock_data_source_id) ? $bedrock_data_source_id : '',
+                $bedrock_s3_bucket
             );
 
             // Get course information
@@ -103,13 +108,17 @@ class send_question extends external_api
 
             // Get answer
             if ($params['sansrag']) {
-                $answer = $weaviate_connector->get_cohere_response($question, $cohere_api_key);
+                $answer = $weaviate_connector->get_cohere_response($question, '');
             } else {
                 $answer = $weaviate_connector->get_question_answer($course_name, $collection_name, $question, $params['userid'], $params['courseid']);
             }
 
-            if (is_null($answer) || $answer === false) {
-                throw new \moodle_exception('empty_response_from_api', 'block_uteluqchatbot');
+            if (is_null($answer) || $answer === false || trim((string)$answer) === '') {
+                $connector_error = $weaviate_connector->get_last_error();
+                if (!empty($connector_error)) {
+                    throw new \Exception($connector_error);
+                }
+                throw new \moodle_exception('empty_response_from_api', 'block_alma_ai_tutor');
             }
 
             // Save conversation
@@ -198,11 +207,11 @@ class send_question extends external_api
         $record->timecreated = time();
 
         try {
-            $count = $DB->count_records('block_uteluqchatbot_conversations', ['userid' => $userid, 'courseid' => $courseid]);
+            $count = $DB->count_records('block_alma_ai_tutor_conversations', ['userid' => $userid, 'courseid' => $courseid]);
 
             if ($count >= $max_conversations) {
                 $oldest_ids = $DB->get_fieldset_sql(
-                    "SELECT id FROM {block_uteluqchatbot_conversations}
+                    "SELECT id FROM {block_alma_ai_tutor_conversations}
                      WHERE userid = :userid AND courseid = :courseid
                      ORDER BY timecreated ASC",
                     ['userid' => $userid, 'courseid' => $courseid],
@@ -212,15 +221,15 @@ class send_question extends external_api
 
                 if ($oldest_ids) {
                     foreach ($oldest_ids as $old_id) {
-                        $DB->delete_records('block_uteluqchatbot_conversations', ['id' => $old_id]);
+                        $DB->delete_records('block_alma_ai_tutor_conversations', ['id' => $old_id]);
                     }
                 }
             }
 
-            $DB->insert_record('block_uteluqchatbot_conversations', $record);
+            $DB->insert_record('block_alma_ai_tutor_conversations', $record);
 
         } catch (dml_exception $e) {
-            throw new \moodle_exception('error_saving_conversation', 'block_uteluqchatbot', '', $e->getMessage());
+            throw new \moodle_exception('error_saving_conversation', 'block_alma_ai_tutor', '', $e->getMessage());
         }
     }
 }

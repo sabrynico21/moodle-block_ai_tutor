@@ -2,9 +2,9 @@
 /**
  * @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  */
-$string['pluginname'] = 'uteluqchatbot';
-$string['uteluqchatbot:addinstance'] = 'Add a new chatbot block';
-$string['uteluqchatbot:myaddinstance'] = 'Add a new chatbot block to Dashboard';
+$string['pluginname'] = 'alma_ai_tutor';
+$string['alma_ai_tutor:addinstance'] = 'Add a new chatbot block';
+$string['alma_ai_tutor:myaddinstance'] = 'Add a new chatbot block to Dashboard';
 $string['adobe_pdf_client_id'] = 'Adobe PDF Services Client ID';
 $string['adobe_pdf_client_id_desc'] = 'Enter your Adobe PDF Services Client ID here.';
 $string['adobe_pdf_client_secret'] = 'Adobe PDF Services Client Secret';
@@ -19,7 +19,7 @@ $string['cohere_embedding_api_key_desc'] = 'Enter your API key for the Cohere Em
 $string['test_api_keys'] = 'Test API Keys';
 $string['test_api_keys_desc'] = 'Click to test the configured API keys';
 $string['test_api_keys_label'] = 'Test Keys';
-$string['uteluqchatbot:manage'] = 'Manage chatbot settings';
+$string['alma_ai_tutor:manage'] = 'Manage chatbot settings';
 $string['test_api_keys'] = "Test API Keys";
 $string['adobe_invalid_credentials'] = "The client ID or client secret for Adobe PDF Services is invalid.";
 $string['adobe_valid_credentials'] = "The client ID and client secret for Adobe PDF Services are valid and functional.";
@@ -94,7 +94,7 @@ $string['failure_after_retries'] = "Failure after ";
 $string['last_error'] = " attempts. Last error: HTTP ";
 $string['invalid_response_format'] = 'Invalid response format.';
 $string['http_code'] = 'HTTP Code: ';
-$string['pluginname'] = "uteluqchatbot";
+$string['pluginname'] = "alma_ai_tutor";
 $string['default_prompt'] = <<<EOT
 Situation Context
 The learner is taking a course on [[ coursename ]]. Your role is to support them by providing accurate, relevant, and helpful answers adapted to their learning.
@@ -168,17 +168,17 @@ $string['error_creating_job'] = 'Error creating job.';
 $string['job_failed'] = 'Job failed.';
 $string['error_processing_pdf'] = 'Error processing PDF.';
 $string['json_encode_error'] = 'JSON encode error: ';
-$string['privacy:metadata:block_uteluqchatbot_conversations'] = 'Information about user conversations with the chatbot';
-$string['privacy:metadata:block_uteluqchatbot_conversations:userid'] = 'The ID of the user who created the conversation';
-$string['privacy:metadata:block_uteluqchatbot_conversations:question'] = 'The question asked by the user';
-$string['privacy:metadata:block_uteluqchatbot_conversations:answer'] = 'The answer provided by the chatbot';
-$string['privacy:metadata:block_uteluqchatbot_conversations:timecreated'] = 'The time when the conversation was created';
-$string['privacy:metadata:block_uteluqchatbot_conversations:courseid'] = 'The ID of the course where the conversation took place';
-$string['privacy:metadata:block_uteluqchatbot_prompts'] = 'Information about custom prompts created by users';
-$string['privacy:metadata:block_uteluqchatbot_prompts:prompt'] = 'The custom prompt text created by the user';
-$string['privacy:metadata:block_uteluqchatbot_prompts:userid'] = 'The ID of the user who created the prompt';
-$string['privacy:metadata:block_uteluqchatbot_prompts:courseid'] = 'The ID of the course where the prompt was created';
-$string['privacy:metadata:block_uteluqchatbot_prompts:timecreated'] = 'The time when the prompt was created';
+$string['privacy:metadata:block_alma_ai_tutor_conversations'] = 'Information about user conversations with the chatbot';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:userid'] = 'The ID of the user who created the conversation';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:question'] = 'The question asked by the user';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:answer'] = 'The answer provided by the chatbot';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:timecreated'] = 'The time when the conversation was created';
+$string['privacy:metadata:block_alma_ai_tutor_conversations:courseid'] = 'The ID of the course where the conversation took place';
+$string['privacy:metadata:block_alma_ai_tutor_prompts'] = 'Information about custom prompts created by users';
+$string['privacy:metadata:block_alma_ai_tutor_prompts:prompt'] = 'The custom prompt text created by the user';
+$string['privacy:metadata:block_alma_ai_tutor_prompts:userid'] = 'The ID of the user who created the prompt';
+$string['privacy:metadata:block_alma_ai_tutor_prompts:courseid'] = 'The ID of the course where the prompt was created';
+$string['privacy:metadata:block_alma_ai_tutor_prompts:timecreated'] = 'The time when the prompt was created';
 $string['privacy:metadata:cohere_api'] = 'Data sent to Cohere API service for AI-powered chat responses';
 $string['privacy:metadata:cohere_api:question'] = 'The user question sent to Cohere API for processing';
 $string['privacy:metadata:cohere_api:courseid'] = 'The course context information sent to Cohere API';
@@ -241,3 +241,43 @@ $string['response_type_debug'] = 'Response type:';
 $string['upload_error_details_debug'] = 'Upload error details:';
 $string['error_object_debug'] = 'Error object:';
 $string['raw_server_response_debug'] = 'Raw server response:';
+
+// Bedrock configuration and runtime strings.
+$string['bedrock_region'] = 'Amazon Bedrock region';
+$string['bedrock_region_desc'] = 'AWS region where your Bedrock Knowledge Base and Runtime are deployed (for example: eu-north-1).';
+$string['bedrock_access_key'] = 'Amazon Bedrock access key';
+$string['bedrock_access_key_desc'] = 'AWS access key with Bedrock Runtime, Bedrock Agent Runtime, and S3 permissions for your Knowledge Base data source.';
+$string['bedrock_secret_key'] = 'Amazon Bedrock secret key';
+$string['bedrock_secret_key_desc'] = 'AWS secret key paired with the configured access key.';
+$string['bedrock_knowledge_base_id'] = 'Amazon Bedrock Knowledge Base ID';
+$string['bedrock_knowledge_base_id_desc'] = 'Knowledge Base ID used as vector store for course retrieval.';
+$string['bedrock_data_source_id'] = 'Amazon Bedrock data source ID (optional)';
+$string['bedrock_data_source_id_desc'] = 'Optional data source ID used to trigger ingestion jobs after upload.';
+$string['bedrock_s3_bucket'] = 'S3 bucket name for Knowledge Base storage';
+$string['bedrock_s3_bucket_desc'] = 'Name of the S3 bucket backing the Knowledge Base data source (for example: moodle-s3b). Uploaded files will be stored here and synced into the Knowledge Base.';
+$string['bedrock_chat_model_id'] = 'Amazon Bedrock chat model ID';
+$string['bedrock_chat_model_id_desc'] = 'Model ID used for direct generation and RAG generation (default: cohere.command-r-v1:0).';
+
+$string['bedrock_not_configured'] = 'Amazon Bedrock configuration is missing or invalid. Please verify plugin settings.';
+$string['bedrock_valid_credentials'] = 'Amazon Bedrock credentials are valid.';
+$string['bedrock_runtime_valid'] = 'Bedrock Runtime model invocation succeeded.';
+$string['bedrock_runtime_invalid'] = 'Bedrock Runtime model invocation failed.';
+$string['bedrock_kb_valid'] = 'Bedrock Knowledge Base retrieval succeeded.';
+$string['bedrock_kb_invalid'] = 'Bedrock Knowledge Base retrieval failed.';
+$string['resync_knowledge_base'] = 'Re-sync Knowledge Base';
+
+$string['privacy:metadata:bedrock_runtime'] = 'Data sent to Amazon Bedrock Runtime for response generation.';
+$string['privacy:metadata:bedrock_runtime:question'] = 'User question sent to Bedrock Runtime.';
+$string['privacy:metadata:bedrock_runtime:courseid'] = 'Course context sent with Bedrock Runtime requests.';
+$string['privacy:metadata:bedrock_runtime:prompt'] = 'Prompt template and instructions sent to Bedrock Runtime.';
+
+$string['privacy:metadata:bedrock_knowledge_base'] = 'Data sent to Amazon Bedrock Knowledge Bases for document retrieval.';
+$string['privacy:metadata:bedrock_knowledge_base:document_content'] = 'Document content indexed for semantic retrieval.';
+$string['privacy:metadata:bedrock_knowledge_base:embeddings'] = 'Vector embeddings generated by Bedrock Knowledge Bases.';
+$string['privacy:metadata:bedrock_knowledge_base:courseid'] = 'Course metadata used to filter retrieval.';
+$string['privacy:metadata:bedrock_knowledge_base:metadata'] = 'Document metadata stored with indexed content.';
+
+$string['privacy:metadata:bedrock_data_automation'] = 'Data sent to Amazon Bedrock Data Automation for PDF text extraction.';
+$string['privacy:metadata:bedrock_data_automation:pdf_content'] = 'PDF content sent for automated extraction.';
+$string['privacy:metadata:bedrock_data_automation:filename'] = 'Original PDF filename sent for extraction.';
+$string['privacy:metadata:bedrock_data_automation:extracted_text'] = 'Text extracted from PDF documents by Bedrock Data Automation.';

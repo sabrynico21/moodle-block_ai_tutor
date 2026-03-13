@@ -6,13 +6,13 @@ define(['jquery', 'core/str'], function ($, str) {
      * Toggle the file upload modal display.
      */
     const toggleFileUploadModal = function () {
-        const modal = document.querySelector('.block_uteluqchatbot #fileUploadModal');
+        const modal = document.querySelector('.block_alma_ai_tutor #fileUploadModal');
         if (modal) {
             modal.style.display = modal.style.display === 'none' || modal.style.display === '' ? 'flex' : 'none';
 
             if (modal.style.display === 'none') {
-                const form = document.querySelector('.block_uteluqchatbot #fileUploadForm');
-                const container = document.querySelector('.block_uteluqchatbot #uploadedFilesContainer');
+                const form = document.querySelector('.block_alma_ai_tutor #fileUploadForm');
+                const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
                 if (form) form.reset();
                 if (container) container.innerHTML = '';
                 
@@ -26,7 +26,7 @@ define(['jquery', 'core/str'], function ($, str) {
      * Remove a selected file from the list.
      */
     function removeFile(button, fileName) {
-        const container = document.querySelector('.block_uteluqchatbot #uploadedFilesContainer');
+        const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
         if (container && button.parentElement) {
             container.removeChild(button.parentElement);
         }
@@ -35,7 +35,7 @@ define(['jquery', 'core/str'], function ($, str) {
         accumulatedFiles = accumulatedFiles.filter(file => file.name !== fileName);
 
         // Update the file input with remaining files
-        const filesInput = document.querySelector('.block_uteluqchatbot #file');
+        const filesInput = document.querySelector('.block_alma_ai_tutor #file');
         if (filesInput) {
             const dt = new DataTransfer();
             accumulatedFiles.forEach(file => dt.items.add(file));
@@ -55,7 +55,7 @@ define(['jquery', 'core/str'], function ($, str) {
         if (file.size > maxSize) {
             return {
                 valid: false,
-                message: get_string('file_size_exceeds_limit', 'block_uteluqchatbot')
+                message: get_string('file_size_exceeds_limit', 'block_alma_ai_tutor')
             };
         }
 
@@ -81,7 +81,7 @@ define(['jquery', 'core/str'], function ($, str) {
      * Display selected files in the container
      */
     function displayFiles(files) {
-        const container = document.querySelector('.block_uteluqchatbot #uploadedFilesContainer');
+        const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
         if (!container) return;
 
         // Clear existing content
@@ -156,8 +156,8 @@ define(['jquery', 'core/str'], function ($, str) {
      * Set up the file input listener to display selected files.
      */
     function setupFileInputListener() {
-        const fileInput = document.querySelector('.block_uteluqchatbot #file');
-        const container = document.querySelector('.block_uteluqchatbot #uploadedFilesContainer');
+        const fileInput = document.querySelector('.block_alma_ai_tutor #file');
+        const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
 
         if (!fileInput || !container) {
             return;
@@ -183,7 +183,7 @@ define(['jquery', 'core/str'], function ($, str) {
         });
 
         // Make the file-upload-box clickable, but NOT the entire container
-        const uploadBox = document.querySelector('.block_uteluqchatbot .file-upload-box');
+        const uploadBox = document.querySelector('.block_alma_ai_tutor .file-upload-box');
         if (uploadBox) {
             uploadBox.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -197,8 +197,8 @@ define(['jquery', 'core/str'], function ($, str) {
      * Initialize drag and drop functionality
      */
     function setupDragAndDrop() {
-        const modal = document.querySelector('.block_uteluqchatbot #fileUploadModal');
-        const fileInput = document.querySelector('.block_uteluqchatbot #file');
+        const modal = document.querySelector('.block_alma_ai_tutor #fileUploadModal');
+        const fileInput = document.querySelector('.block_alma_ai_tutor #file');
 
         if (!modal || !fileInput) {
             return;

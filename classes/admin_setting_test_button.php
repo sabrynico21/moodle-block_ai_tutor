@@ -46,7 +46,7 @@ class admin_setting_test_button extends admin_setting {
      * @return string The HTML for the setting.
      */
     public function output_html($data, $query='') {
-        $url = new moodle_url('/blocks/uteluqchatbot/test_api_keys.php');
+        $url = new moodle_url('/blocks/alma_ai_tutor/test_api_keys.php');
         return format_admin_setting(
             $this,
             $this->visible_name,
@@ -54,7 +54,7 @@ class admin_setting_test_button extends admin_setting {
                 'div',
                 html_writer::tag(
                     'button',
-                    get_string('test_api_keys_label', 'block_uteluqchatbot'),
+                    get_string('test_api_keys_label', 'block_alma_ai_tutor'),
                     array(
                         'id' => 'id_test_api_keys',
                         'class' => 'btn btn-secondary',

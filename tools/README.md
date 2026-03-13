@@ -1,6 +1,6 @@
-# Development Tools for block_uteluqchatbot
+# Development Tools for block_alma_ai_tutor
 
-This directory contains useful tools for analyzing and maintaining the block_uteluqchatbot plugin code.
+This directory contains useful tools for analyzing and maintaining the block_alma_ai_tutor plugin code.
 
 ## english_only.py
 
@@ -41,7 +41,7 @@ python english_only.py --extensions .php,.js
 ### Example output
 
 ```
-Auto-detected project root: /path/to/moodle-block_uteluqchatbot
+Auto-detected project root: /path/to/moodle-block_alma_ai_tutor
 Scanning for non-English comments in php, js, mustache files...
 
 ❌ 5 non-English comments found in 3 files:

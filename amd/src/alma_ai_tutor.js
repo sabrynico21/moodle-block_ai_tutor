@@ -7,19 +7,19 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
         init: function(wwwroot, sesskey, userid, courseid) {
             // Toggle prompt modal
             const togglePromptModal = function() {
-                const modal = document.querySelector('.block_uteluqchatbot #promptModal');
+                const modal = document.querySelector('.block_alma_ai_tutor #promptModal');
                 modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
             };
 
             // Toggle file upload modal
             const toggleFileUploadModal = function () {
-                const modal = document.querySelector('.block_uteluqchatbot #fileUploadModal');
+                const modal = document.querySelector('.block_alma_ai_tutor #fileUploadModal');
                 if (modal) {
                     modal.style.display = modal.style.display === 'none' || modal.style.display === '' ? 'flex' : 'none';
 
                     if (modal.style.display === 'none') {
-                        const form = document.querySelector('.block_uteluqchatbot #fileUploadForm');
-                        const container = document.querySelector('.block_uteluqchatbot #uploadedFilesContainer');
+                        const form = document.querySelector('.block_alma_ai_tutor #fileUploadForm');
+                        const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
                         if (form) form.reset();
                         if (container) container.innerHTML = '';
                     }
@@ -50,15 +50,15 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
             };
 
             // Handle chat form submission
-            $(".block_uteluqchatbot #chatform").on("submit", function(e) {
+            $(".block_alma_ai_tutor #chatform").on("submit", function(e) {
                 e.preventDefault();
-                const question = $(".block_uteluqchatbot #question").val();
-                const errorDiv = $(".block_uteluqchatbot #error-message");
+                const question = $(".block_alma_ai_tutor #question").val();
+                const errorDiv = $(".block_alma_ai_tutor #error-message");
 
-                str.get_string('sending_question', 'block_uteluqchatbot').then(function(sendingQuestionStr) {
+                str.get_string('sending_question', 'block_alma_ai_tutor').then(function(sendingQuestionStr) {
                     errorDiv.text(sendingQuestionStr);
                 }).catch(function() {
-                    str.get_string('sending_question_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                    str.get_string('sending_question_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                         errorDiv.text(fallbackStr);
                     }).catch(function() {
                         errorDiv.text("Sending the question...");
@@ -67,7 +67,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
 
                 // Use AJAX call instead of fetch
                 const request = {
-                    methodname: 'block_uteluqchatbot_send_question',
+                    methodname: 'block_alma_ai_tutor_send_question',
                     args: {
                         question: question,
                         userid: userid,
@@ -80,10 +80,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                     .then(function(data) {
                         errorDiv.text("");
                         if (data.status === 'error') {
-                            str.get_string('error', 'block_uteluqchatbot').then(function(errorStr) {
+                            str.get_string('error', 'block_alma_ai_tutor').then(function(errorStr) {
                                 errorDiv.text(errorStr + ': ' + data.error);
                             }).catch(function() {
-                                str.get_string('error_colon_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                str.get_string('error_colon_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                     errorDiv.text(fallbackStr + data.error);
                                 }).catch(function() {
                                     errorDiv.text("Error: " + data.error);
@@ -91,24 +91,24 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             });
                             return;
                         }
-                        const chatMessages = $(".block_uteluqchatbot #chat-messages");
+                        const chatMessages = $(".block_alma_ai_tutor #chat-messages");
                         chatMessages.append(`
                             <div class="message user-message">${question}</div>
                             <div class="message bot-message">${data.answer}</div>
                         `);
-                        $(".block_uteluqchatbot #question").val("");
+                        $(".block_alma_ai_tutor #question").val("");
                         chatMessages.scrollTop(chatMessages[0].scrollHeight);
                     })
                     .catch(function(error) {
                         console.error("Error:", error);
                         
-                        str.get_string('unknown_error_occurred', 'block_uteluqchatbot').then(function(unknownErrorStr) {
+                        str.get_string('unknown_error_occurred', 'block_alma_ai_tutor').then(function(unknownErrorStr) {
                             const errorMessage = error && error.message ? error.message : unknownErrorStr;
                             
-                            str.get_string('error_sending_question', 'block_uteluqchatbot').then(function(errorSendingQuestionStr) {
+                            str.get_string('error_sending_question', 'block_alma_ai_tutor').then(function(errorSendingQuestionStr) {
                                 errorDiv.text(errorSendingQuestionStr + errorMessage);
                             }).catch(function() {
-                                str.get_string('error_sending_question_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                str.get_string('error_sending_question_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                     errorDiv.text(fallbackStr + errorMessage);
                                 }).catch(function() {
                                     errorDiv.text("Error sending the question: " + errorMessage);
@@ -116,10 +116,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             });
                         }).catch(function() {
                             const errorMessage = error && error.message ? error.message : 'Unknown error occurred';
-                            str.get_string('error_sending_question', 'block_uteluqchatbot').then(function(errorSendingQuestionStr) {
+                            str.get_string('error_sending_question', 'block_alma_ai_tutor').then(function(errorSendingQuestionStr) {
                                 errorDiv.text(errorSendingQuestionStr + errorMessage);
                             }).catch(function() {
-                                str.get_string('error_sending_question_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                str.get_string('error_sending_question_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                     errorDiv.text(fallbackStr + errorMessage);
                                 }).catch(function() {
                                     errorDiv.text("Error sending the question: " + errorMessage);
@@ -130,15 +130,15 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
             });
 
             // Handle prompt form submission
-            $(".block_uteluqchatbot #promptform").on("submit", function(e) {
+            $(".block_alma_ai_tutor #promptform").on("submit", function(e) {
                 e.preventDefault();
-                const prompttext = $(".block_uteluqchatbot #prompttext").val();
-                const errorDiv = $(".block_uteluqchatbot #error-message");
+                const prompttext = $(".block_alma_ai_tutor #prompttext").val();
+                const errorDiv = $(".block_alma_ai_tutor #error-message");
 
-                str.get_string('saving_prompt', 'block_uteluqchatbot').then(function(savingPromptStr) {
+                str.get_string('saving_prompt', 'block_alma_ai_tutor').then(function(savingPromptStr) {
                     errorDiv.text(savingPromptStr);
                 }).catch(function() {
-                    str.get_string('saving_prompt_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                    str.get_string('saving_prompt_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                         errorDiv.text(fallbackStr);
                     }).catch(function() {
                         errorDiv.text("Saving the prompt...");
@@ -147,7 +147,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
 
                 // Use AJAX call instead of fetch
                 const request = {
-                    methodname: 'block_uteluqchatbot_save_prompt',
+                    methodname: 'block_alma_ai_tutor_save_prompt',
                     args: {
                         prompttext: prompttext,
                         userid: userid,
@@ -159,10 +159,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                     .then(function(data) {
                         errorDiv.text("");
                         if (data.status === 'error') {
-                            str.get_string('error', 'block_uteluqchatbot').then(function(errorStr) {
+                            str.get_string('error', 'block_alma_ai_tutor').then(function(errorStr) {
                                 errorDiv.text(errorStr + ': ' + data.error);
                             }).catch(function() {
-                                str.get_string('error_colon_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                str.get_string('error_colon_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                     errorDiv.text(fallbackStr + data.error);
                                 }).catch(function() {
                                     errorDiv.text("Error: " + data.error);
@@ -170,10 +170,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             });
                             return;
                         }
-                        str.get_string('prompt_saved_successfully', 'block_uteluqchatbot').then(function(promptSavedSuccessfullyStr) {
+                        str.get_string('prompt_saved_successfully', 'block_alma_ai_tutor').then(function(promptSavedSuccessfullyStr) {
                             errorDiv.text(promptSavedSuccessfullyStr);
                         }).catch(function() {
-                            str.get_string('prompt_saved_successfully_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                            str.get_string('prompt_saved_successfully_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                 errorDiv.text(fallbackStr);
                             }).catch(function() {
                                 errorDiv.text("Prompt saved successfully!");
@@ -187,13 +187,13 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                     .catch(function(error) {
                         console.error("Error:", error);
                         
-                        str.get_string('unknown_error_occurred', 'block_uteluqchatbot').then(function(unknownErrorStr) {
+                        str.get_string('unknown_error_occurred', 'block_alma_ai_tutor').then(function(unknownErrorStr) {
                             const errorMessage = error && error.message ? error.message : unknownErrorStr;
                             
-                            str.get_string('error_saving_prompt', 'block_uteluqchatbot').then(function(errorSavingPromptStr) {
+                            str.get_string('error_saving_prompt', 'block_alma_ai_tutor').then(function(errorSavingPromptStr) {
                                 errorDiv.text(errorSavingPromptStr + errorMessage);
                             }).catch(function() {
-                                str.get_string('error_saving_prompt_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                str.get_string('error_saving_prompt_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                     errorDiv.text(fallbackStr + errorMessage);
                                 }).catch(function() {
                                     errorDiv.text("Error saving the prompt: " + errorMessage);
@@ -201,10 +201,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             });
                         }).catch(function() {
                             const errorMessage = error && error.message ? error.message : 'Unknown error occurred';
-                            str.get_string('error_saving_prompt', 'block_uteluqchatbot').then(function(errorSavingPromptStr) {
+                            str.get_string('error_saving_prompt', 'block_alma_ai_tutor').then(function(errorSavingPromptStr) {
                                 errorDiv.text(errorSavingPromptStr + errorMessage);
                             }).catch(function() {
-                                str.get_string('error_saving_prompt_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                str.get_string('error_saving_prompt_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                     errorDiv.text(fallbackStr + errorMessage);
                                 }).catch(function() {
                                     errorDiv.text("Error saving the prompt: " + errorMessage);
@@ -215,19 +215,19 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
             });
 
             // Handle file upload form submission
-            const fileUploadForm = document.querySelector(".block_uteluqchatbot #fileUploadForm");
+            const fileUploadForm = document.querySelector(".block_alma_ai_tutor #fileUploadForm");
             if (fileUploadForm) {
                 fileUploadForm.addEventListener("submit", function(e) {
                     e.preventDefault();
                     
-                    const fileInput = document.querySelector('.block_uteluqchatbot #file');
-                    const errorDiv = document.querySelector(".block_uteluqchatbot #error-message");
+                    const fileInput = document.querySelector('.block_alma_ai_tutor #file');
+                    const errorDiv = document.querySelector(".block_alma_ai_tutor #error-message");
                     
                     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                        str.get_string('no_files_selected', 'block_uteluqchatbot').then(function(noFilesStr) {
+                        str.get_string('no_files_selected', 'block_alma_ai_tutor').then(function(noFilesStr) {
                             errorDiv.textContent = noFilesStr;
                         }).catch(function() {
-                            str.get_string('no_files_selected_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                            str.get_string('no_files_selected_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                 errorDiv.textContent = fallbackStr;
                             }).catch(function() {
                                 errorDiv.textContent = "No files selected.";
@@ -236,10 +236,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                         return;
                     }
 
-                    str.get_string('uploading_file', 'block_uteluqchatbot').then(function(uploadingFileStr) {
+                    str.get_string('uploading_file', 'block_alma_ai_tutor').then(function(uploadingFileStr) {
                         errorDiv.textContent = uploadingFileStr;
                     }).catch(function() {
-                        str.get_string('uploading_files_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                        str.get_string('uploading_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                             errorDiv.textContent = fallbackStr;
                         }).catch(function() {
                             errorDiv.textContent = "Uploading files...";
@@ -249,21 +249,21 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                     // Convert files to base64 and send via external service
                     convertFilesToBase64(fileInput.files)
                         .then(function(filesData) {
-                            str.get_string('files_converted_debug', 'block_uteluqchatbot').then(function(debugStr) {
+                            str.get_string('files_converted_debug', 'block_alma_ai_tutor').then(function(debugStr) {
                                 
                             }).catch(function() {
                                 
                             });
                             
                             const request = {
-                                methodname: 'block_uteluqchatbot_upload_files',
+                                methodname: 'block_alma_ai_tutor_upload_files',
                                 args: {
                                     courseid: courseid,
                                     files: filesData
                                 }
                             };
 
-                            str.get_string('sending_ajax_request_debug', 'block_uteluqchatbot').then(function(debugStr) {
+                            str.get_string('sending_ajax_request_debug', 'block_alma_ai_tutor').then(function(debugStr) {
                                 
                             }).catch(function() {
                                 
@@ -271,13 +271,13 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             return ajax.call([request])[0];
                         })
                         .then(function(response) {
-                            str.get_string('upload_response_received_debug', 'block_uteluqchatbot').then(function(debugStr) {
+                            str.get_string('upload_response_received_debug', 'block_alma_ai_tutor').then(function(debugStr) {
                                 
                             }).catch(function() {
                                 
                             });
                             
-                            str.get_string('response_type_debug', 'block_uteluqchatbot').then(function(debugStr) {
+                            str.get_string('response_type_debug', 'block_alma_ai_tutor').then(function(debugStr) {
                                 
                             }).catch(function() {
                                 
@@ -286,10 +286,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             errorDiv.textContent = "";
                             
                             if (response && response.success) {
-                                str.get_string('file_indexed_successfully', 'block_uteluqchatbot').then(function(fileIndexedStr) {
+                                str.get_string('file_indexed_successfully', 'block_alma_ai_tutor').then(function(fileIndexedStr) {
                                     errorDiv.textContent = fileIndexedStr;
                                 }).catch(function() {
-                                    str.get_string('files_indexed_successfully_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                    str.get_string('files_indexed_successfully_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                         errorDiv.textContent = fallbackStr;
                                     }).catch(function() {
                                         errorDiv.textContent = response.message || "Files indexed successfully!";
@@ -298,7 +298,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
 
                                 // Reset form and close modal
                                 fileUploadForm.reset();
-                                const container = document.querySelector('.block_uteluqchatbot #uploadedFilesContainer');
+                                const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
                                 if (container) container.innerHTML = '';
                                 toggleFileUploadModal();
 
@@ -306,13 +306,13 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                     location.reload();
                                 }, 1500);
                             } else {
-                                str.get_string('unknown_error', 'block_uteluqchatbot').then(function(unknownErrorStr) {
+                                str.get_string('unknown_error', 'block_alma_ai_tutor').then(function(unknownErrorStr) {
                                     const responseMessage = response && response.message ? response.message : unknownErrorStr;
                                     
-                                    str.get_string('error_processing_file', 'block_uteluqchatbot').then(function(errorProcessingStr) {
+                                    str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(errorProcessingStr) {
                                         errorDiv.textContent = errorProcessingStr + ': ' + responseMessage;
                                     }).catch(function() {
-                                        str.get_string('error_processing_files_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                        str.get_string('error_processing_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                             errorDiv.textContent = fallbackStr + responseMessage;
                                         }).catch(function() {
                                             errorDiv.textContent = "Error processing files: " + responseMessage;
@@ -320,10 +320,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                     });
                                 }).catch(function() {
                                     const responseMessage = response && response.message ? response.message : 'Unknown error';
-                                    str.get_string('error_processing_file', 'block_uteluqchatbot').then(function(errorProcessingStr) {
+                                    str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(errorProcessingStr) {
                                         errorDiv.textContent = errorProcessingStr + ': ' + responseMessage;
                                     }).catch(function() {
-                                        str.get_string('error_processing_files_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                        str.get_string('error_processing_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                             errorDiv.textContent = fallbackStr + responseMessage;
                                         }).catch(function() {
                                             errorDiv.textContent = "Error processing files: " + responseMessage;
@@ -333,13 +333,13 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             }
                         })
                         .catch(function(error) {
-                            str.get_string('upload_error_details_debug', 'block_uteluqchatbot').then(function(debugStr) {
+                            str.get_string('upload_error_details_debug', 'block_alma_ai_tutor').then(function(debugStr) {
                                 console.error(debugStr, error);
                             }).catch(function() {
                                 console.error("Upload error details:", error);
                             });
                             
-                            str.get_string('error_object_debug', 'block_uteluqchatbot').then(function(debugStr) {
+                            str.get_string('error_object_debug', 'block_alma_ai_tutor').then(function(debugStr) {
                                 
                             }).catch(function() {
                                 
@@ -347,13 +347,13 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             
                             // If the error contains a raw response, display it.
                             if (error && error.responseText) {
-                                str.get_string('raw_server_response_debug', 'block_uteluqchatbot').then(function(debugStr) {
+                                str.get_string('raw_server_response_debug', 'block_alma_ai_tutor').then(function(debugStr) {
                                     
                                 }).catch(function() {
                                     
                                 });
                                 
-                                str.get_string('server_response_error', 'block_uteluqchatbot').then(function(serverErrorStr) {
+                                str.get_string('server_response_error', 'block_alma_ai_tutor').then(function(serverErrorStr) {
                                     errorDiv.textContent = serverErrorStr;
                                 }).catch(function() {
                                     errorDiv.textContent = "Server response error. Check console for details.";
@@ -362,7 +362,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             }
                             
                             // Secure error handling
-                            str.get_string('unknown_error_occurred', 'block_uteluqchatbot').then(function(unknownErrorStr) {
+                            str.get_string('unknown_error_occurred', 'block_alma_ai_tutor').then(function(unknownErrorStr) {
                                 let errorMessage = unknownErrorStr;
                                 if (error) {
                                     if (typeof error === 'string') {
@@ -374,7 +374,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                     } else if (error.exception && error.exception.message) {
                                         errorMessage = error.exception.message;
                                     } else {
-                                        str.get_string('server_error_check_console', 'block_uteluqchatbot').then(function(serverErrorStr) {
+                                        str.get_string('server_error_check_console', 'block_alma_ai_tutor').then(function(serverErrorStr) {
                                             errorMessage = serverErrorStr;
                                         }).catch(function() {
                                             errorMessage = "Server error - check console for details";
@@ -382,10 +382,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                     }
                                 }
                                 
-                                str.get_string('error_processing_file', 'block_uteluqchatbot').then(function(errorProcessingStr) {
+                                str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(errorProcessingStr) {
                                     errorDiv.textContent = errorProcessingStr + ': ' + errorMessage;
                                 }).catch(function() {
-                                    str.get_string('error_processing_files_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                    str.get_string('error_processing_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                         errorDiv.textContent = fallbackStr + errorMessage;
                                     }).catch(function() {
                                         errorDiv.textContent = "Error processing files: " + errorMessage;
@@ -407,10 +407,10 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                     }
                                 }
                                 
-                                str.get_string('error_processing_file', 'block_uteluqchatbot').then(function(errorProcessingStr) {
+                                str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(errorProcessingStr) {
                                     errorDiv.textContent = errorProcessingStr + ': ' + errorMessage;
                                 }).catch(function() {
-                                    str.get_string('error_processing_files_fallback', 'block_uteluqchatbot').then(function(fallbackStr) {
+                                    str.get_string('error_processing_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
                                         errorDiv.textContent = fallbackStr + errorMessage;
                                     }).catch(function() {
                                         errorDiv.textContent = "Error processing files: " + errorMessage;

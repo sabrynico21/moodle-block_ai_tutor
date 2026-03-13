@@ -8,7 +8,7 @@
 
 1. **Navigate to the project directory**:
    ```bash
-   cd path/to/moodle-block_uteluqchatbot
+   cd path/to/moodle-block_alma_ai_tutor
    ```
 
 2. **Install dependencies**:
@@ -68,18 +68,18 @@ If you encounter problems with Grunt or generating minified files:
 ## JavaScript File Structure
 
 - `amd/src/`: Contains JavaScript source files
-  - `uteluqchatbot.js`: Main chatbot functionality
+  - `alma_ai_tutor.js`: Main chatbot functionality
   - `fileupload.js`: File upload management
 
 - `amd/build/`: Contains generated minified JavaScript files
-  - `uteluqchatbot.min.js`: Minified version of the main file
+  - `alma_ai_tutor.min.js`: Minified version of the main file
   - `fileupload.min.js`: Minified version of the upload manager
 
 ## Languages
 
 The project supports multiple languages via files in the `lang/` folder. To add or modify language strings:
 
-1. Modify the appropriate file in `lang/XX/block_uteluqchatbot.php` where XX is the language code
+1. Modify the appropriate file in `lang/XX/block_alma_ai_tutor.php` where XX is the language code
 2. To add a new language, create a new folder with the language code and copy the structure from `lang/en/`
 3. You can use the `ch.py` script to check the consistency of language strings between different languages
 

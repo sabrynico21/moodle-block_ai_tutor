@@ -19,21 +19,21 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * @package     block_uteluqchatbot
+ * @package     block_alma_ai_tutor
  * @copyright   2025 Universié TÉLUQ
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-// Full name of the plugin (type_name) - Here, a block named "uteluqchatbot".
-$plugin->component = 'block_uteluqchatbot';
+// Full name of the plugin (type_name) - Here, a block named "alma_ai_tutor".
+$plugin->component = 'block_alma_ai_tutor';
 
 // Human-readable version - Recommended format: major.minor.patch.
-$plugin->release = '0.5.9';
+$plugin->release = '0.6.0';
 
 // Internal version number - Format YYYYMMDDXX (year, month, day, increment).
-$plugin->version = 2025063001;
+$plugin->version = 2026031200;
 
 // Minimum required version of Moodle (here Moodle 4.1 - November 2022).
 // This corresponds to Moodle 4.1.
