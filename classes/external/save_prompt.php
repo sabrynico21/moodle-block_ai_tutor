@@ -30,6 +30,7 @@ class save_prompt extends external_api
             'prompttext' => new external_value(PARAM_RAW, 'The prompt text'),
             'userid' => new external_value(PARAM_INT, 'User ID'),
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
+            'instanceid' => new external_value(PARAM_INT, 'Block instance ID', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -43,7 +44,7 @@ class save_prompt extends external_api
      * @throws invalid_parameter_exception If the user is invalid
      * @throws dml_exception If a database error occurs
      */
-    public static function execute($prompttext, $userid, $courseid)
+    public static function execute($prompttext, $userid, $courseid, $instanceid = 0)
     {
         global $DB, $USER;
 
@@ -52,6 +53,7 @@ class save_prompt extends external_api
             'prompttext' => $prompttext,
             'userid' => $userid,
             'courseid' => $courseid,
+            'instanceid' => $instanceid,
         ]);
 
         // Security checks
@@ -68,12 +70,17 @@ class save_prompt extends external_api
 
         try {
             // Check if a prompt already exists for this user
-            $existing_prompt = $DB->get_record('block_alma_ai_tutor_prompts', ['userid' => $params['userid']]);
+            $existing_prompt = $DB->get_record('block_alma_ai_tutor_prompts', [
+                'userid' => $params['userid'],
+                'courseid'   => $params['courseid'],
+                'instanceid' => $params['instanceid']
+            ]);
 
             $record = new \stdClass();
             $record->prompt = $params['prompttext'];
             $record->userid = $params['userid'];
             $record->courseid = $params['courseid'];
+            $record->instanceid = $params['instanceid'];
             $record->timemodified = time();
 
             if ($existing_prompt) {

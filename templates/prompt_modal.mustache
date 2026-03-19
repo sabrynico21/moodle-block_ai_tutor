@@ -24,7 +24,7 @@
     @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
 }}
 
-<div id="promptModal" class="block_alma_ai_tutor modal" style="display: none;">
+<div id="promptModal-{{instanceid}}" class="block_alma_ai_tutor modal" style="display: none;">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -32,14 +32,14 @@
                     {{#has_prompt}}{{#str}}modify_prompt, block_alma_ai_tutor{{/str}}{{/has_prompt}}
                     {{^has_prompt}}{{#str}}add_prompt, block_alma_ai_tutor{{/str}}{{/has_prompt}}
                 </h5>
-                <button type="button" class="close" onclick="togglePromptModal()">
+                <button type="button" class="close" onclick="togglePromptModal('{{instanceid}}')">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                         <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
                     </svg>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="promptform">
+                <form id="promptform-{{instanceid}}">
                     <!-- Guide pour les enseignants -->
                     <div class="form-group">
                         <p>
@@ -52,15 +52,15 @@
 
                     <!-- Champ de contenu du prompt -->
                     <div class="form-group">
-                        <label for="prompttext">{{#str}}prompt_content, block_alma_ai_tutor{{/str}}</label>
-                        <textarea id="prompttext" name="prompttext"
+                        <label for="prompttext-{{instanceid}}">{{#str}}prompt_content, block_alma_ai_tutor{{/str}}</label>
+                        <textarea id="prompttext-{{instanceid}}" name="prompttext"
                                   class="form-input prompt-textarea"
                                   placeholder="{{#str}}write_prompt_here, block_alma_ai_tutor{{/str}}"
                                   style="height: 300px;" required>{{prompt_text}}</textarea>
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn-secondary" onclick="togglePromptModal()">{{#str}}cancel, block_alma_ai_tutor{{/str}}</button>
+                        <button type="button" class="btn-secondary" onclick="togglePromptModal('{{instanceid}}')">{{#str}}cancel, block_alma_ai_tutor{{/str}}</button>
                         <button type="submit" class="btn-primary">{{#str}}save, block_alma_ai_tutor{{/str}}</button>
                     </div>
                 </form>
