@@ -31,6 +31,8 @@ class send_question extends external_api
             'userid' => new external_value(PARAM_INT, 'User ID'),
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
             'sansrag' => new external_value(PARAM_BOOL, 'Without RAG', VALUE_DEFAULT, false),
+            'sectionid'  => new external_value(PARAM_INT,  'Section ID', VALUE_DEFAULT, 0),
+            'instanceid' => new external_value(PARAM_INT,  'Block instance ID', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -45,7 +47,7 @@ class send_question extends external_api
      * @return array Response array containing the chatbot's answer and metadata
      * @throws Exception If validation fails or processing encounters an error
      */
-    public static function execute($question, $userid, $courseid, $sansrag = false)
+    public static function execute($question, $userid, $courseid, $sansrag = false, $sectionid = 0, $instanceid = 0)
     {
         global $DB, $USER;
 
@@ -55,6 +57,8 @@ class send_question extends external_api
             'userid' => $userid,
             'courseid' => $courseid,
             'sansrag' => $sansrag,
+            'sectionid'  => $sectionid,
+            'instanceid' => $instanceid,
         ]);
 
         // Security checks

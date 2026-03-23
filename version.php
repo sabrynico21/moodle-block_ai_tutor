@@ -33,7 +33,7 @@ $plugin->component = 'block_alma_ai_tutor';
 $plugin->release = '0.6.0';
 
 // Internal version number - Format YYYYMMDDXX (year, month, day, increment).
-$plugin->version = 2026031200;
+$plugin->version = 2026031801;
 
 // Minimum required version of Moodle (here Moodle 4.1 - November 2022).
 // This corresponds to Moodle 4.1.

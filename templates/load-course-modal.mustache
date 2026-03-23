@@ -20,23 +20,23 @@
     @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
 }}
 <div class="block_alma_ai_tutor">
-    <div id="fileUploadModal" class="modal" style="display: none;">
+    <div id="fileUploadModal-{{instanceid}}" class="modal" style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{{#str}}add_files, block_alma_ai_tutor{{/str}}</h5>
-                    <button type="button" class="close" onclick="toggleFileUploadModal()">
+                    <button type="button" class="close" onclick="toggleFileUploadModal('{{instanceid}}')">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
                         </svg>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="fileUploadForm" enctype="multipart/form-data">
+                    <form id="fileUploadForm-{{instanceid}}" enctype="multipart/form-data">
                         <div class="form-group">
-                            <label for="file">{{#str}}text_or_pdf_files, block_alma_ai_tutor{{/str}}</label>
+                            <label for="file-{{instanceid}}">{{#str}}text_or_pdf_files, block_alma_ai_tutor{{/str}}</label>
                             <div class="file-upload-container">
-                                <input type="file" id="file" name="files[]" class="file-input" accept=".txt,.text,.md,.pdf" multiple required>
+                                <input type="file" id="file-{{instanceid}}" name="files[]" class="file-input" accept=".txt,.text,.md,.pdf" multiple required>
                                 <div class="file-upload-box">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="upload-icon">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -47,11 +47,11 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="uploadedFilesContainer">
+                        <div id="uploadedFilesContainer-{{instanceid}}">
                             <!-- Les fichiers uploadés apparaîtront ici avec la classe .uploaded-file -->
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn-secondary" onclick="toggleFileUploadModal()">{{#str}}cancel, block_alma_ai_tutor{{/str}}</button>
+                            <button type="button" class="btn-secondary" onclick="toggleFileUploadModal('{{instanceid}}')">{{#str}}cancel, block_alma_ai_tutor{{/str}}</button>
                             <button type="submit" class="btn-primary">{{#str}}upload_course, block_alma_ai_tutor{{/str}}</button>
                         </div>
                     </form>

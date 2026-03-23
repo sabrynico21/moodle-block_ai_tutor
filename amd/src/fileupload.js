@@ -2,17 +2,19 @@
  * @copyright 2025 Université TÉLUQ and the UNIVERSITÉ GASTON BERGER DE SAINT-LOUIS
  */
 define(['jquery', 'core/str'], function ($, str) {
+    return {
+        init: function (instanceid) {
     /**
      * Toggle the file upload modal display.
      */
     const toggleFileUploadModal = function () {
-        const modal = document.querySelector('.block_alma_ai_tutor #fileUploadModal');
+        const modal = document.querySelector('#fileUploadModal-' + instanceid);
         if (modal) {
             modal.style.display = modal.style.display === 'none' || modal.style.display === '' ? 'flex' : 'none';
 
             if (modal.style.display === 'none') {
-                const form = document.querySelector('.block_alma_ai_tutor #fileUploadForm');
-                const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
+                const form = document.querySelector('#fileUploadForm-' + instanceid);
+                const container = document.querySelector('#uploadedFilesContainer-' + instanceid);
                 if (form) form.reset();
                 if (container) container.innerHTML = '';
                 
@@ -26,7 +28,7 @@ define(['jquery', 'core/str'], function ($, str) {
      * Remove a selected file from the list.
      */
     function removeFile(button, fileName) {
-        const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
+        const container = document.querySelector('#uploadedFilesContainer-' + instanceid);
         if (container && button.parentElement) {
             container.removeChild(button.parentElement);
         }
@@ -35,7 +37,7 @@ define(['jquery', 'core/str'], function ($, str) {
         accumulatedFiles = accumulatedFiles.filter(file => file.name !== fileName);
 
         // Update the file input with remaining files
-        const filesInput = document.querySelector('.block_alma_ai_tutor #file');
+        const filesInput = document.querySelector('#file-' + instanceid);
         if (filesInput) {
             const dt = new DataTransfer();
             accumulatedFiles.forEach(file => dt.items.add(file));
@@ -81,7 +83,7 @@ define(['jquery', 'core/str'], function ($, str) {
      * Display selected files in the container
      */
     function displayFiles(files) {
-        const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
+        const container = document.querySelector('#uploadedFilesContainer-' + instanceid);
         if (!container) return;
 
         // Clear existing content
@@ -156,8 +158,8 @@ define(['jquery', 'core/str'], function ($, str) {
      * Set up the file input listener to display selected files.
      */
     function setupFileInputListener() {
-        const fileInput = document.querySelector('.block_alma_ai_tutor #file');
-        const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
+        const fileInput = document.querySelector('#file-' + instanceid);
+        const container = document.querySelector('#uploadedFilesContainer-' + instanceid);
 
         if (!fileInput || !container) {
             return;
@@ -183,7 +185,7 @@ define(['jquery', 'core/str'], function ($, str) {
         });
 
         // Make the file-upload-box clickable, but NOT the entire container
-        const uploadBox = document.querySelector('.block_alma_ai_tutor .file-upload-box');
+        const uploadBox = document.querySelector('#fileUploadModal-' + instanceid + ' .file-upload-box');
         if (uploadBox) {
             uploadBox.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -197,8 +199,8 @@ define(['jquery', 'core/str'], function ($, str) {
      * Initialize drag and drop functionality
      */
     function setupDragAndDrop() {
-        const modal = document.querySelector('.block_alma_ai_tutor #fileUploadModal');
-        const fileInput = document.querySelector('.block_alma_ai_tutor #file');
+        const modal = document.querySelector('#fileUploadModal-' + instanceid);
+        const fileInput = document.querySelector('#file-' + instanceid);
 
         if (!modal || !fileInput) {
             return;
@@ -266,14 +268,11 @@ define(['jquery', 'core/str'], function ($, str) {
             displayFiles(accumulatedFiles);
         }
     }
+        setupFileInputListener();
+        setupDragAndDrop();
 
-    return {
-        init: function () {
-            setupFileInputListener();
-            setupDragAndDrop();
-
-            // Expose function to global scope if needed
-            window.toggleFileUploadModal = toggleFileUploadModal;
+        // Expose function to global scope if needed
+        window.toggleFileUploadModal = toggleFileUploadModal;
         }
     };
 });

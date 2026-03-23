@@ -4,22 +4,45 @@
 
 define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str, ajax, notification) {
     return {
-        init: function(wwwroot, sesskey, userid, courseid) {
+        init: function(wwwroot, sesskey, userid, courseid, sectionid, instanceid, savedsectionid) {
+            // Hiding the block if is not the same section where it was created
+            const wrongSection = (savedsectionid > 0 && sectionid !== savedsectionid) ||
+                                (savedsectionid === 0 && sectionid > 0);
+
+            if (wrongSection) {
+                const blockEl = document.querySelector('.block_alma_ai_tutor[data-instanceid="' + instanceid + '"]');
+                if (blockEl) {
+                    const blockContainer = blockEl.closest('.block');
+                    if (blockContainer) blockContainer.style.display = 'none';
+                }
+                return;
+            }
+            
+            // Unique selectors for instanceid
+            const $chatform   = $('#chatform-'     + instanceid);
+            const $question   = $('#question-'     + instanceid);
+            const $messages   = $('#chat-messages-'+ instanceid);
+            const $errorDiv   = $('#error-message-'+ instanceid);
+
             // Toggle prompt modal
-            const togglePromptModal = function() {
-                const modal = document.querySelector('.block_alma_ai_tutor #promptModal');
-                modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+            const togglePromptModal = function(iid) {
+                const id = iid || instanceid;
+                const modal = document.querySelector('#promptModal-' + id);
+                if (modal) {
+                    modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+                }
             };
 
             // Toggle file upload modal
-            const toggleFileUploadModal = function () {
-                const modal = document.querySelector('.block_alma_ai_tutor #fileUploadModal');
+            const toggleFileUploadModal = function (iid) {
+                const id = iid || instanceid;
+                const modal = document.querySelector('#fileUploadModal-' + id);
                 if (modal) {
                     modal.style.display = modal.style.display === 'none' || modal.style.display === '' ? 'flex' : 'none';
 
                     if (modal.style.display === 'none') {
-                        const form = document.querySelector('.block_alma_ai_tutor #fileUploadForm');
-                        const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
+                        const form = document.querySelector('#fileUploadForm-' + id);
+                        const container = document.querySelector('#uploadedFilesContainer-' + id);
                         if (form) form.reset();
                         if (container) container.innerHTML = '';
                     }
@@ -50,18 +73,17 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
             };
 
             // Handle chat form submission
-            $(".block_alma_ai_tutor #chatform").on("submit", function(e) {
+            $chatform.on("submit", function(e) {
                 e.preventDefault();
-                const question = $(".block_alma_ai_tutor #question").val();
-                const errorDiv = $(".block_alma_ai_tutor #error-message");
+                const question = $question.val();
 
-                str.get_string('sending_question', 'block_alma_ai_tutor').then(function(sendingQuestionStr) {
-                    errorDiv.text(sendingQuestionStr);
+                str.get_string('sending_question', 'block_alma_ai_tutor').then(function(s) {
+                    $errorDiv.text(s);
                 }).catch(function() {
-                    str.get_string('sending_question_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                        errorDiv.text(fallbackStr);
+                    str.get_string('sending_question_fallback', 'block_alma_ai_tutor').then(function(s) {
+                        $errorDiv.text(s);
                     }).catch(function() {
-                        errorDiv.text("Sending the question...");
+                        $errorDiv.text("Sending the question...");
                     });
                 });
 
@@ -72,76 +94,58 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                         question: question,
                         userid: userid,
                         courseid: courseid,
+                        sectionid: sectionid,
+                        instanceid: instanceid,
                         sansrag: false
                     }
                 };
 
                 ajax.call([request])[0]
                     .then(function(data) {
-                        errorDiv.text("");
+                        $errorDiv.text("");
                         if (data.status === 'error') {
-                            str.get_string('error', 'block_alma_ai_tutor').then(function(errorStr) {
-                                errorDiv.text(errorStr + ': ' + data.error);
+                            str.get_string('error', 'block_alma_ai_tutor').then(function(s) {
+                                $errorDiv.text(s + ': ' + data.error);
                             }).catch(function() {
-                                str.get_string('error_colon_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                    errorDiv.text(fallbackStr + data.error);
-                                }).catch(function() {
-                                    errorDiv.text("Error: " + data.error);
-                                });
+                                $errorDiv.text("Error: " + data.error);
                             });
                             return;
                         }
-                        const chatMessages = $(".block_alma_ai_tutor #chat-messages");
-                        chatMessages.append(`
-                            <div class="message user-message">${question}</div>
-                            <div class="message bot-message">${data.answer}</div>
-                        `);
-                        $(".block_alma_ai_tutor #question").val("");
-                        chatMessages.scrollTop(chatMessages[0].scrollHeight);
+                        $messages.append(
+                            '<div class="message user-message">' + question + '</div>' +
+                            '<div class="message bot-message">'  + data.answer  + '</div>'
+                        );
+                        $question.val("");
+                        $messages.scrollTop($messages[0].scrollHeight);
                     })
                     .catch(function(error) {
                         console.error("Error:", error);
-                        
                         str.get_string('unknown_error_occurred', 'block_alma_ai_tutor').then(function(unknownErrorStr) {
                             const errorMessage = error && error.message ? error.message : unknownErrorStr;
-                            
-                            str.get_string('error_sending_question', 'block_alma_ai_tutor').then(function(errorSendingQuestionStr) {
-                                errorDiv.text(errorSendingQuestionStr + errorMessage);
+                            str.get_string('error_sending_question', 'block_alma_ai_tutor').then(function(s) {
+                                $errorDiv.text(s + errorMessage);
                             }).catch(function() {
-                                str.get_string('error_sending_question_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                    errorDiv.text(fallbackStr + errorMessage);
-                                }).catch(function() {
-                                    errorDiv.text("Error sending the question: " + errorMessage);
-                                });
+                                $errorDiv.text("Error sending the question: " + errorMessage);
                             });
                         }).catch(function() {
                             const errorMessage = error && error.message ? error.message : 'Unknown error occurred';
-                            str.get_string('error_sending_question', 'block_alma_ai_tutor').then(function(errorSendingQuestionStr) {
-                                errorDiv.text(errorSendingQuestionStr + errorMessage);
-                            }).catch(function() {
-                                str.get_string('error_sending_question_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                    errorDiv.text(fallbackStr + errorMessage);
-                                }).catch(function() {
-                                    errorDiv.text("Error sending the question: " + errorMessage);
-                                });
-                            });
+                            $errorDiv.text("Error sending the question: " + errorMessage);
                         });
                     });
             });
 
             // Handle prompt form submission
-            $(".block_alma_ai_tutor #promptform").on("submit", function(e) {
+            $('#promptform-' + instanceid).on("submit", function(e) {
                 e.preventDefault();
-                const prompttext = $(".block_alma_ai_tutor #prompttext").val();
-                const errorDiv = $(".block_alma_ai_tutor #error-message");
+                const prompttext = $('#prompttext-' + instanceid).val();
 
-                str.get_string('saving_prompt', 'block_alma_ai_tutor').then(function(savingPromptStr) {
-                    errorDiv.text(savingPromptStr);
+                str.get_string('saving_prompt', 'block_alma_ai_tutor').then(function(s) {
+                    $errorDiv.text(s);
                 }).catch(function() {
-                    str.get_string('saving_prompt_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                        errorDiv.text(fallbackStr);
+                    str.get_string('saving_prompt_fallback', 'block_alma_ai_tutor').then(function(s) {
+                        $errorDiv.text(s);
                     }).catch(function() {
-                        errorDiv.text("Saving the prompt...");
+                        $errorDiv.text("Saving the prompt...");
                     });
                 });
 
@@ -151,35 +155,28 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                     args: {
                         prompttext: prompttext,
                         userid: userid,
-                        courseid: courseid
+                        courseid: courseid,
+                        instanceid: instanceid
                     }
                 };
 
                 ajax.call([request])[0]
                     .then(function(data) {
-                        errorDiv.text("");
+                        $errorDiv.text("");
                         if (data.status === 'error') {
-                            str.get_string('error', 'block_alma_ai_tutor').then(function(errorStr) {
-                                errorDiv.text(errorStr + ': ' + data.error);
+                            str.get_string('error', 'block_alma_ai_tutor').then(function(s) {
+                                $errorDiv.text(s + ': ' + data.error);
                             }).catch(function() {
-                                str.get_string('error_colon_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                    errorDiv.text(fallbackStr + data.error);
-                                }).catch(function() {
-                                    errorDiv.text("Error: " + data.error);
-                                });
+                                $errorDiv.text("Error: " + data.error);
                             });
                             return;
                         }
-                        str.get_string('prompt_saved_successfully', 'block_alma_ai_tutor').then(function(promptSavedSuccessfullyStr) {
-                            errorDiv.text(promptSavedSuccessfullyStr);
+                        str.get_string('prompt_saved_successfully', 'block_alma_ai_tutor').then(function(s) {
+                            $errorDiv.text(s);
                         }).catch(function() {
-                            str.get_string('prompt_saved_successfully_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                errorDiv.text(fallbackStr);
-                            }).catch(function() {
-                                errorDiv.text("Prompt saved successfully!");
-                            });
+                            $errorDiv.text("Prompt saved successfully!");
                         });
-                        togglePromptModal();
+                        togglePromptModal(instanceid);
                         setTimeout(function() {
                             location.reload();
                         }, 1500);
@@ -190,71 +187,44 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                         str.get_string('unknown_error_occurred', 'block_alma_ai_tutor').then(function(unknownErrorStr) {
                             const errorMessage = error && error.message ? error.message : unknownErrorStr;
                             
-                            str.get_string('error_saving_prompt', 'block_alma_ai_tutor').then(function(errorSavingPromptStr) {
-                                errorDiv.text(errorSavingPromptStr + errorMessage);
+                            str.get_string('error_saving_prompt', 'block_alma_ai_tutor').then(function(s) {
+                                $errorDiv.text(s + errorMessage);
                             }).catch(function() {
-                                str.get_string('error_saving_prompt_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                    errorDiv.text(fallbackStr + errorMessage);
-                                }).catch(function() {
-                                    errorDiv.text("Error saving the prompt: " + errorMessage);
-                                });
+                                $errorDiv.text("Error saving the prompt: " + errorMessage);
                             });
                         }).catch(function() {
                             const errorMessage = error && error.message ? error.message : 'Unknown error occurred';
-                            str.get_string('error_saving_prompt', 'block_alma_ai_tutor').then(function(errorSavingPromptStr) {
-                                errorDiv.text(errorSavingPromptStr + errorMessage);
-                            }).catch(function() {
-                                str.get_string('error_saving_prompt_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                    errorDiv.text(fallbackStr + errorMessage);
-                                }).catch(function() {
-                                    errorDiv.text("Error saving the prompt: " + errorMessage);
-                                });
-                            });
+                            $errorDiv.text("Error saving the prompt: " + errorMessage);
                         });
                     });
             });
 
             // Handle file upload form submission
-            const fileUploadForm = document.querySelector(".block_alma_ai_tutor #fileUploadForm");
+            const fileUploadForm = document.querySelector('#fileUploadForm-' + instanceid);
             if (fileUploadForm) {
                 fileUploadForm.addEventListener("submit", function(e) {
                     e.preventDefault();
                     
-                    const fileInput = document.querySelector('.block_alma_ai_tutor #file');
-                    const errorDiv = document.querySelector(".block_alma_ai_tutor #error-message");
-                    
+                    const fileInput = document.querySelector('#file-' + instanceid);
+
                     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                        str.get_string('no_files_selected', 'block_alma_ai_tutor').then(function(noFilesStr) {
-                            errorDiv.textContent = noFilesStr;
+                        str.get_string('no_files_selected', 'block_alma_ai_tutor').then(function(s) {
+                            $errorDiv.text(s);
                         }).catch(function() {
-                            str.get_string('no_files_selected_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                errorDiv.textContent = fallbackStr;
-                            }).catch(function() {
-                                errorDiv.textContent = "No files selected.";
-                            });
+                            $errorDiv.text("No files selected.");
                         });
                         return;
                     }
 
-                    str.get_string('uploading_file', 'block_alma_ai_tutor').then(function(uploadingFileStr) {
-                        errorDiv.textContent = uploadingFileStr;
+                    str.get_string('uploading_file', 'block_alma_ai_tutor').then(function(s) {
+                        $errorDiv.text(s);
                     }).catch(function() {
-                        str.get_string('uploading_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                            errorDiv.textContent = fallbackStr;
-                        }).catch(function() {
-                            errorDiv.textContent = "Uploading files...";
-                        });
+                        $errorDiv.text("Uploading files...");
                     });
 
                     // Convert files to base64 and send via external service
                     convertFilesToBase64(fileInput.files)
                         .then(function(filesData) {
-                            str.get_string('files_converted_debug', 'block_alma_ai_tutor').then(function(debugStr) {
-                                
-                            }).catch(function() {
-                                
-                            });
-                            
                             const request = {
                                 methodname: 'block_alma_ai_tutor_upload_files',
                                 args: {
@@ -262,45 +232,23 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                     files: filesData
                                 }
                             };
-
-                            str.get_string('sending_ajax_request_debug', 'block_alma_ai_tutor').then(function(debugStr) {
-                                
-                            }).catch(function() {
-                                
-                            });
                             return ajax.call([request])[0];
                         })
                         .then(function(response) {
-                            str.get_string('upload_response_received_debug', 'block_alma_ai_tutor').then(function(debugStr) {
-                                
-                            }).catch(function() {
-                                
-                            });
-                            
-                            str.get_string('response_type_debug', 'block_alma_ai_tutor').then(function(debugStr) {
-                                
-                            }).catch(function() {
-                                
-                            });
-                            
-                            errorDiv.textContent = "";
+                            $errorDiv.text("");
                             
                             if (response && response.success) {
-                                str.get_string('file_indexed_successfully', 'block_alma_ai_tutor').then(function(fileIndexedStr) {
-                                    errorDiv.textContent = fileIndexedStr;
+                                str.get_string('file_indexed_successfully', 'block_alma_ai_tutor').then(function(s) {
+                                    $errorDiv.text(s);
                                 }).catch(function() {
-                                    str.get_string('files_indexed_successfully_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                        errorDiv.textContent = fallbackStr;
-                                    }).catch(function() {
-                                        errorDiv.textContent = response.message || "Files indexed successfully!";
-                                    });
+                                    $errorDiv.text(response.message || "Files indexed successfully!");
                                 });
 
                                 // Reset form and close modal
                                 fileUploadForm.reset();
-                                const container = document.querySelector('.block_alma_ai_tutor #uploadedFilesContainer');
+                                const container = document.querySelector('#uploadedFilesContainer-' + instanceid);
                                 if (container) container.innerHTML = '';
-                                toggleFileUploadModal();
+                                toggleFileUploadModal(instanceid);
 
                                 setTimeout(function() {
                                     location.reload();
@@ -309,54 +257,26 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                 str.get_string('unknown_error', 'block_alma_ai_tutor').then(function(unknownErrorStr) {
                                     const responseMessage = response && response.message ? response.message : unknownErrorStr;
                                     
-                                    str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(errorProcessingStr) {
-                                        errorDiv.textContent = errorProcessingStr + ': ' + responseMessage;
+                                    str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(s) {
+                                        $errorDiv.text(s + ': ' + responseMessage);
                                     }).catch(function() {
-                                        str.get_string('error_processing_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                            errorDiv.textContent = fallbackStr + responseMessage;
-                                        }).catch(function() {
-                                            errorDiv.textContent = "Error processing files: " + responseMessage;
-                                        });
+                                        $errorDiv.text("Error processing files: " + responseMessage);
                                     });
                                 }).catch(function() {
                                     const responseMessage = response && response.message ? response.message : 'Unknown error';
-                                    str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(errorProcessingStr) {
-                                        errorDiv.textContent = errorProcessingStr + ': ' + responseMessage;
-                                    }).catch(function() {
-                                        str.get_string('error_processing_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                            errorDiv.textContent = fallbackStr + responseMessage;
-                                        }).catch(function() {
-                                            errorDiv.textContent = "Error processing files: " + responseMessage;
-                                        });
-                                    });
+                                    $errorDiv.text("Error processing files: " + responseMessage);
                                 });
                             }
                         })
                         .catch(function(error) {
-                            str.get_string('upload_error_details_debug', 'block_alma_ai_tutor').then(function(debugStr) {
-                                console.error(debugStr, error);
-                            }).catch(function() {
-                                console.error("Upload error details:", error);
-                            });
-                            
-                            str.get_string('error_object_debug', 'block_alma_ai_tutor').then(function(debugStr) {
-                                
-                            }).catch(function() {
-                                
-                            });
+                            console.error("Upload error details:", error);
                             
                             // If the error contains a raw response, display it.
                             if (error && error.responseText) {
-                                str.get_string('raw_server_response_debug', 'block_alma_ai_tutor').then(function(debugStr) {
-                                    
+                                str.get_string('raw_server_response_debug', 'block_alma_ai_tutor').then(function(s) {
+                                    $errorDiv.text(s);
                                 }).catch(function() {
-                                    
-                                });
-                                
-                                str.get_string('server_response_error', 'block_alma_ai_tutor').then(function(serverErrorStr) {
-                                    errorDiv.textContent = serverErrorStr;
-                                }).catch(function() {
-                                    errorDiv.textContent = "Server response error. Check console for details.";
+                                    $errorDiv.text("Server response error. Check console for details.");
                                 });
                                 return;
                             }
@@ -374,22 +294,14 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                     } else if (error.exception && error.exception.message) {
                                         errorMessage = error.exception.message;
                                     } else {
-                                        str.get_string('server_error_check_console', 'block_alma_ai_tutor').then(function(serverErrorStr) {
-                                            errorMessage = serverErrorStr;
-                                        }).catch(function() {
-                                            errorMessage = "Server error - check console for details";
-                                        });
+                                        errorMessage = "Server error - check console for details";
                                     }
                                 }
                                 
-                                str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(errorProcessingStr) {
-                                    errorDiv.textContent = errorProcessingStr + ': ' + errorMessage;
+                                str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(s) {
+                                    $errorDiv.text(s + ': ' + errorMessage);
                                 }).catch(function() {
-                                    str.get_string('error_processing_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                        errorDiv.textContent = fallbackStr + errorMessage;
-                                    }).catch(function() {
-                                        errorDiv.textContent = "Error processing files: " + errorMessage;
-                                    });
+                                    $errorDiv.text("Error processing files: " + errorMessage);
                                 });
                             }).catch(function() {
                                 let errorMessage = 'Unknown error occurred';
@@ -406,16 +318,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                         errorMessage = "Server error - check console for details";
                                     }
                                 }
-                                
-                                str.get_string('error_processing_file', 'block_alma_ai_tutor').then(function(errorProcessingStr) {
-                                    errorDiv.textContent = errorProcessingStr + ': ' + errorMessage;
-                                }).catch(function() {
-                                    str.get_string('error_processing_files_fallback', 'block_alma_ai_tutor').then(function(fallbackStr) {
-                                        errorDiv.textContent = fallbackStr + errorMessage;
-                                    }).catch(function() {
-                                        errorDiv.textContent = "Error processing files: " + errorMessage;
-                                    });
-                                });
+                                $errorDiv.text("Error processing files: " + errorMessage);
                             });
                         });
                 });

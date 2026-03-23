@@ -37,8 +37,8 @@
     </style>
 </head>
 <body>
-<div class="block_alma_ai_tutor block-chatbot-container">
-    <div id="chat-messages" class="chat-messages">
+<div class="block_alma_ai_tutor block-chatbot-container" data-instanceid="{{instanceid}}">
+    <div id="chat-messages-{{instanceid}}" class="chat-messages">
         <div class="welcome-message">
             <div class="bot-avatar">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -56,10 +56,10 @@
             </div>
         </div>
     </div>
-    <div id="error-message" class="error-message"></div>
+    <div id="error-message-{{instanceid}}" class="error-message"></div>
     <div class="chat-input-container">
-        <form id="chatform" class="chat-form">
-            <input type="text" id="question" name="question"
+        <form id="chatform-{{instanceid}}" class="chat-form">
+            <input type="text" id="question-{{instanceid}}" name="question"
                    class="chat-input" placeholder="{{#str}}ask_your_question_here, block_alma_ai_tutor{{/str}}" required>
             <button type="submit" class="send-button">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -69,13 +69,13 @@
         </form>
         <div class="button-container">
             {{#isteacher}}
-            <button id="toggle-prompt-form" class="prompt-button" onclick="togglePromptModal()">
+            <button id="toggle-prompt-form-{{instanceid}}" class="prompt-button" onclick="togglePromptModal('{{instanceid}}')">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="currentColor"/>
                 </svg>
                 {{#str}}modify_prompt, block_alma_ai_tutor{{/str}}
             </button>
-            <button id="toggle-file-upload-form" class="file-upload-button" onclick="toggleFileUploadModal()">
+            <button id="toggle-file-upload-form-{{instanceid}}" class="file-upload-button" onclick="toggleFileUploadModal('{{instanceid}}')">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="currentColor"/>
                 </svg>
