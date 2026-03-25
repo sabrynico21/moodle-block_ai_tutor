@@ -31,6 +31,7 @@ class save_prompt extends external_api
             'userid' => new external_value(PARAM_INT, 'User ID'),
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
             'instanceid' => new external_value(PARAM_INT, 'Block instance ID', VALUE_DEFAULT, 0),
+            'sectionid' => new external_value(PARAM_INT, 'Section ID', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -44,7 +45,7 @@ class save_prompt extends external_api
      * @throws invalid_parameter_exception If the user is invalid
      * @throws dml_exception If a database error occurs
      */
-    public static function execute($prompttext, $userid, $courseid, $instanceid = 0)
+    public static function execute($prompttext, $userid, $courseid, $instanceid = 0, $sectionid = 0)
     {
         global $DB, $USER;
 
@@ -54,6 +55,7 @@ class save_prompt extends external_api
             'userid' => $userid,
             'courseid' => $courseid,
             'instanceid' => $instanceid,
+            'sectionid' => $sectionid,
         ]);
 
         // Security checks
@@ -73,14 +75,24 @@ class save_prompt extends external_api
             $existing_prompt = $DB->get_record('block_alma_ai_tutor_prompts', [
                 'userid' => $params['userid'],
                 'courseid'   => $params['courseid'],
-                'instanceid' => $params['instanceid']
+                'instanceid' => $params['instanceid'],
+                'sectionid' => $params['sectionid'],
             ]);
+
+            if (!$existing_prompt) {
+                $existing_prompt = $DB->get_record('block_alma_ai_tutor_prompts', [
+                    'userid' => $params['userid'],
+                    'courseid'   => $params['courseid'],
+                    'instanceid' => $params['instanceid']
+                ]);
+            }
 
             $record = new \stdClass();
             $record->prompt = $params['prompttext'];
             $record->userid = $params['userid'];
             $record->courseid = $params['courseid'];
             $record->instanceid = $params['instanceid'];
+            $record->sectionid = $params['sectionid'];
             $record->timemodified = time();
 
             if ($existing_prompt) {

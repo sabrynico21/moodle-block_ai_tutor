@@ -58,8 +58,25 @@ class provider implements
                 'answer' => 'privacy:metadata:block_alma_ai_tutor_conversations:answer',
                 'timecreated' => 'privacy:metadata:block_alma_ai_tutor_conversations:timecreated',
                 'courseid' => 'privacy:metadata:block_alma_ai_tutor_conversations:courseid',
+                'sectionid' => 'privacy:metadata:block_alma_ai_tutor_conversations:sectionid',
+                'instanceid' => 'privacy:metadata:block_alma_ai_tutor_conversations:instanceid',
+                'sessionid' => 'privacy:metadata:block_alma_ai_tutor_conversations:sessionid',
             ],
             'privacy:metadata:block_alma_ai_tutor_conversations'
+        );
+
+        $items->add_database_table(
+            'block_alma_ai_tutor_chat_sessions',
+            [
+                'userid' => 'privacy:metadata:block_alma_ai_tutor_chat_sessions:userid',
+                'courseid' => 'privacy:metadata:block_alma_ai_tutor_chat_sessions:courseid',
+                'sectionid' => 'privacy:metadata:block_alma_ai_tutor_chat_sessions:sectionid',
+                'instanceid' => 'privacy:metadata:block_alma_ai_tutor_chat_sessions:instanceid',
+                'title' => 'privacy:metadata:block_alma_ai_tutor_chat_sessions:title',
+                'timecreated' => 'privacy:metadata:block_alma_ai_tutor_chat_sessions:timecreated',
+                'timemodified' => 'privacy:metadata:block_alma_ai_tutor_chat_sessions:timemodified',
+            ],
+            'privacy:metadata:block_alma_ai_tutor_chat_sessions'
         );
 
         $items->add_database_table(
@@ -130,6 +147,18 @@ class provider implements
             'userid' => $userid
         ]);
 
+        // Get contexts where user has sessions.
+        $sql = "SELECT DISTINCT c.id
+                  FROM {context} c
+                  JOIN {course} co ON co.id = c.instanceid AND c.contextlevel = :contextlevel
+                  JOIN {block_alma_ai_tutor_chat_sessions} bs ON bs.courseid = co.id
+                 WHERE bs.userid = :userid";
+
+        $contextlist->add_from_sql($sql, [
+            'contextlevel' => CONTEXT_COURSE,
+            'userid' => $userid
+        ]);
+
         // Get contexts where user has prompts.
         $sql = "SELECT DISTINCT c.id
                   FROM {context} c
@@ -168,6 +197,13 @@ class provider implements
         $sql = "SELECT bp.userid
                   FROM {block_alma_ai_tutor_prompts} bp
                  WHERE bp.courseid = :courseid";
+
+        $userlist->add_from_sql('userid', $sql, ['courseid' => $context->instanceid]);
+
+        // Get users with sessions in this course.
+        $sql = "SELECT bs.userid
+              FROM {block_alma_ai_tutor_chat_sessions} bs
+             WHERE bs.courseid = :courseid";
 
         $userlist->add_from_sql('userid', $sql, ['courseid' => $context->instanceid]);
     }
@@ -218,6 +254,36 @@ class provider implements
                 );
             }
 
+            // Export chat sessions.
+            $sql = "SELECT bs.id, bs.sectionid, bs.instanceid, bs.title, bs.timecreated, bs.timemodified
+                      FROM {block_alma_ai_tutor_chat_sessions} bs
+                     WHERE bs.userid = :userid AND bs.courseid = :courseid
+                  ORDER BY bs.timemodified ASC";
+
+            $sessions = $DB->get_records_sql($sql, [
+                'userid' => $user->id,
+                'courseid' => $context->instanceid
+            ]);
+
+            if (!empty($sessions)) {
+                $sessiondata = [];
+                foreach ($sessions as $session) {
+                    $sessiondata[] = [
+                        'id' => $session->id,
+                        'sectionid' => $session->sectionid,
+                        'instanceid' => $session->instanceid,
+                        'title' => $session->title,
+                        'timecreated' => \core_privacy\local\request\transform::datetime($session->timecreated),
+                        'timemodified' => \core_privacy\local\request\transform::datetime($session->timemodified),
+                    ];
+                }
+
+                writer::with_context($context)->export_data(
+                    [get_string('pluginname', 'block_alma_ai_tutor'), get_string('sessions', 'block_alma_ai_tutor')],
+                    (object) ['sessions' => $sessiondata]
+                );
+            }
+
             // Export prompts.
             $sql = "SELECT bp.prompt, bp.timecreated
                       FROM {block_alma_ai_tutor_prompts} bp
@@ -260,6 +326,7 @@ class provider implements
 
         $DB->delete_records('block_alma_ai_tutor_conversations', ['courseid' => $context->instanceid]);
         $DB->delete_records('block_alma_ai_tutor_prompts', ['courseid' => $context->instanceid]);
+        $DB->delete_records('block_alma_ai_tutor_chat_sessions', ['courseid' => $context->instanceid]);
     }
 
     /**
@@ -287,6 +354,11 @@ class provider implements
             ]);
 
             $DB->delete_records('block_alma_ai_tutor_prompts', [
+                'userid' => $user->id,
+                'courseid' => $context->instanceid
+            ]);
+
+            $DB->delete_records('block_alma_ai_tutor_chat_sessions', [
                 'userid' => $user->id,
                 'courseid' => $context->instanceid
             ]);
@@ -321,6 +393,11 @@ class provider implements
         );
 
         $DB->delete_records_select('block_alma_ai_tutor_prompts',
+            "courseid = :courseid AND userid {$usersql}",
+            array_merge(['courseid' => $context->instanceid], $userparams)
+        );
+
+        $DB->delete_records_select('block_alma_ai_tutor_chat_sessions',
             "courseid = :courseid AND userid {$usersql}",
             array_merge(['courseid' => $context->instanceid], $userparams)
         );

@@ -73,6 +73,15 @@ if (has_capability('block/alma_ai_tutor:manage', context_system::instance()) && 
         PARAM_TEXT
     ));
 
+    // Session timeout (minutes) before a new chat session is automatically created.
+    $settings->add(new admin_setting_configtext(
+        'block_alma_ai_tutor/chat_session_timeout_minutes',
+        get_string('chat_session_timeout_minutes', 'block_alma_ai_tutor'),
+        get_string('chat_session_timeout_minutes_desc', 'block_alma_ai_tutor'),
+        30,
+        PARAM_INT
+    ));
+
     // Button to test API keys
     $settings->add(new admin_setting_test_button(
         'block_alma_ai_tutor/test_api_keys',

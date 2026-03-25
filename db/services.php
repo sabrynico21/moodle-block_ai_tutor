@@ -37,6 +37,26 @@ $functions = [
         'capabilities' => 'moodle/course:update',
         'loginrequired' => true,
     ],
+    'block_alma_ai_tutor_get_user_sessions' => [
+        'classname'   => 'block_alma_ai_tutor\\external\\get_user_sessions',
+        'methodname'  => 'execute',
+        'classpath'   => '',
+        'description' => 'List chatbot sessions for the current user in a course/section/instance',
+        'type'        => 'read',
+        'ajax'        => true,
+        'capabilities' => '',
+        'loginrequired' => true,
+    ],
+    'block_alma_ai_tutor_get_session_messages' => [
+        'classname'   => 'block_alma_ai_tutor\\external\\get_session_messages',
+        'methodname'  => 'execute',
+        'classpath'   => '',
+        'description' => 'Get chatbot messages for a specific user-owned session',
+        'type'        => 'read',
+        'ajax'        => true,
+        'capabilities' => '',
+        'loginrequired' => true,
+    ],
 ];
 
 $services = [
@@ -44,7 +64,9 @@ $services = [
         'functions' => [
             'block_alma_ai_tutor_send_question',
             'block_alma_ai_tutor_save_prompt',
-            'block_alma_ai_tutor_upload_files'
+            'block_alma_ai_tutor_upload_files',
+            'block_alma_ai_tutor_get_user_sessions',
+            'block_alma_ai_tutor_get_session_messages'
         ],
         'restrictedusers' => 0,
         'enabled' => 1,

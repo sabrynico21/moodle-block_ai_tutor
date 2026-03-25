@@ -105,11 +105,17 @@ class block_alma_ai_tutor extends block_base
             'has_prompt' => !empty($existing_prompt),
             'prompt_text' => $existing_prompt ? $existing_prompt->prompt : $default_prompt,
             'isteacher' => $isteacher,
+            'isediting' => $PAGE->user_is_editing(),
             'wwwroot' => $CFG->wwwroot,
             'userid' => $USER->id,
             'courseid' => $COURSE->id,
             'sectionid' => $sectionid,
             'instanceid' => $instanceid,
+            'analyticsurl' => (new moodle_url('/blocks/alma_ai_tutor/view_conversation_analytics.php', [
+                'courseid' => $COURSE->id,
+                'sectionid' => $saved_sectionid,
+                'instanceid' => $instanceid,
+            ]))->out(false),
             'sesskey' => sesskey()
         ];
 

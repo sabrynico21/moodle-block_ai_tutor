@@ -38,6 +38,11 @@
 </head>
 <body>
 <div class="block_alma_ai_tutor block-chatbot-container" data-instanceid="{{instanceid}}">
+    <div class="chat-top-toolbar">
+        <button type="button" id="new-conversation-{{instanceid}}" class="prompt-button">
+            + {{#str}}new_conversation, block_alma_ai_tutor{{/str}}
+        </button>
+    </div>
     <div id="chat-messages-{{instanceid}}" class="chat-messages">
         <div class="welcome-message">
             <div class="bot-avatar">
@@ -68,7 +73,18 @@
             </button>
         </form>
         <div class="button-container">
+            {{^isediting}}
+            <button type="button" id="open-conversations-{{instanceid}}" class="prompt-button" onclick="openConversationsPanel('{{instanceid}}')">
+                {{#str}}your_conversations, block_alma_ai_tutor{{/str}}
+            </button>
             {{#isteacher}}
+            <a href="{{analyticsurl}}" class="file-upload-button">
+                {{#str}}open_teacher_analytics, block_alma_ai_tutor{{/str}}
+            </a>
+            {{/isteacher}}
+            {{/isediting}}
+            {{#isteacher}}
+            {{#isediting}}
             <button id="toggle-prompt-form-{{instanceid}}" class="prompt-button" onclick="togglePromptModal('{{instanceid}}')">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="currentColor"/>
@@ -81,8 +97,16 @@
                 </svg>
                 {{#str}}upload_course, block_alma_ai_tutor{{/str}}
             </button>
+            {{/isediting}}
             {{/isteacher}}
         </div>
+    </div>
+    <div id="chat-sessions-panel-{{instanceid}}" class="chat-sessions-panel" style="display:none;">
+        <div class="chat-sessions-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="margin:0;">{{#str}}your_conversations, block_alma_ai_tutor{{/str}}</h4>
+            <button type="button" id="close-conversations-{{instanceid}}" class="prompt-button" aria-label="Close" onclick="closeConversationsPanel('{{instanceid}}')">×</button>
+        </div>
+        <div id="session-list-{{instanceid}}" class="session-list"></div>
     </div>
 </div>
 
