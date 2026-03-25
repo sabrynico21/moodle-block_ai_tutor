@@ -114,20 +114,66 @@ class weaviate_connector {
     /**
      * RAG answer generation through Bedrock Knowledge Base.
      */
-    public function get_question_answer($course_name, string $collection, string $question, $user_id, $course_id): ?string {
+    public function get_question_answer(
+        $course_name,
+        string $collection,
+        string $question,
+        $user_id,
+        $course_id,
+        int $section_id = 0,
+        int $instance_id = 0,
+        int $session_id = 0
+    ): ?string {
         global $DB;
 
-        $taskrecord = $DB->get_record('block_alma_ai_tutor_prompts', ['userid' => $user_id, 'courseid' => $course_id]);
+        $taskrecord = $DB->get_record('block_alma_ai_tutor_prompts', [
+            'userid' => $user_id,
+            'courseid' => $course_id,
+            'instanceid' => $instance_id,
+            'sectionid' => $section_id,
+        ]);
+        if (!$taskrecord) {
+            $taskrecord = $DB->get_record('block_alma_ai_tutor_prompts', [
+                'userid' => $user_id,
+                'courseid' => $course_id,
+                'instanceid' => $instance_id,
+            ]);
+        }
+        if (!$taskrecord) {
+            $taskrecord = $DB->get_record('block_alma_ai_tutor_prompts', [
+                'userid' => $user_id,
+                'courseid' => $course_id,
+            ]);
+        }
         $task = $taskrecord ? $taskrecord->prompt : get_string('default_prompt', 'block_alma_ai_tutor');
 
-        $last_conversations = $DB->get_records_sql(
-            "SELECT question, answer
-               FROM {block_alma_ai_tutor_conversations}
-              WHERE userid = :userid
-           ORDER BY timecreated DESC
-              LIMIT 10",
-            ['userid' => $user_id]
-        );
+        if (!empty($session_id)) {
+            $last_conversations = $DB->get_records_sql(
+                "SELECT question, answer
+                   FROM {block_alma_ai_tutor_conversations}
+                  WHERE sessionid = :sessionid
+               ORDER BY timecreated DESC
+                  LIMIT 10",
+                ['sessionid' => $session_id]
+            );
+        } else {
+            $last_conversations = $DB->get_records_sql(
+                "SELECT question, answer
+                   FROM {block_alma_ai_tutor_conversations}
+                  WHERE userid = :userid
+                    AND courseid = :courseid
+                    AND sectionid = :sectionid
+                    AND instanceid = :instanceid
+               ORDER BY timecreated DESC
+                  LIMIT 10",
+                [
+                    'userid' => $user_id,
+                    'courseid' => $course_id,
+                    'sectionid' => $section_id,
+                    'instanceid' => $instance_id,
+                ]
+            );
+        }
 
         $history = '';
         $conversations = array_values($last_conversations);
