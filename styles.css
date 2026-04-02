@@ -314,7 +314,8 @@
     }
 
     .block_alma_ai_tutor .chat-top-toolbar {
-        display: none;
+        display: flex;
+        justify-content: flex-end;
         padding: 0 8px;
     }
 
