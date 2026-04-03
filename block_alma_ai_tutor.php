@@ -15,6 +15,73 @@ class block_alma_ai_tutor extends block_base
         $this->title = get_string('pluginname', 'block_alma_ai_tutor');
     }
 
+    /**
+     * Build the chatbot display title for the current block scope.
+     *
+     * @param int|null $savedsectionid Persisted section scope from block config.
+     * @return string
+     */
+    private function build_display_title($savedsectionid = null)
+    {
+        global $COURSE, $DB;
+
+        $base = get_string('pluginname', 'block_alma_ai_tutor');
+
+        if (empty($COURSE) || empty($COURSE->id)) {
+            return $base;
+        }
+
+        if ($savedsectionid === null) {
+            $savedsectionid = $this->get_saved_sectionid();
+        }
+
+        $savedsectionid = (int)$savedsectionid;
+        if ($savedsectionid > 0) {
+            // Prefer lookup by course_sections.id; fallback to section number for legacy values.
+            $section = $DB->get_record(
+                'course_sections',
+                ['id' => $savedsectionid, 'course' => (int)$COURSE->id],
+                'id, section, name'
+            );
+
+            if (!$section) {
+                $section = $DB->get_record(
+                    'course_sections',
+                    ['course' => (int)$COURSE->id, 'section' => $savedsectionid],
+                    'id, section, name'
+                );
+            }
+
+            if ($section && trim((string)$section->name) !== '') {
+                return $base . ' - ' . $section->name;
+            }
+
+            $fallbacksection = $section ? (int)$section->section : $savedsectionid;
+            return $base . ' - Section ' . $fallbacksection;
+        }
+
+        return $base . ' - ' . $COURSE->fullname;
+    }
+
+    /**
+     * Read the persisted section scope from this block instance config.
+     *
+     * @return int
+     */
+    private function get_saved_sectionid()
+    {
+        if (empty($this->instance->configdata)) {
+            return 0;
+        }
+
+        $config = unserialize(base64_decode($this->instance->configdata));
+        if ($config && isset($config->sectionid)) {
+            return (int)$config->sectionid;
+        }
+
+        return 0;
+    }
+
     public function applicable_formats()
     {
         return array(
@@ -56,6 +123,9 @@ class block_alma_ai_tutor extends block_base
                 );
             }
         }
+
+        // Keep the displayed title aligned with the block instance scope.
+        $this->title = $this->build_display_title();
     }
 
     public function get_content()
@@ -84,12 +154,10 @@ class block_alma_ai_tutor extends block_base
         $instanceid = $this->instance->id;
 
         // Leggi il sectionid salvato nella configurazione del blocco (impostato alla creazione)
-        $block_config = !empty($this->instance->configdata)
-            ? unserialize(base64_decode($this->instance->configdata))
-            : null;
-        $saved_sectionid = ($block_config && isset($block_config->sectionid))
-            ? (int)$block_config->sectionid
-            : 0;
+        $saved_sectionid = $this->get_saved_sectionid();
+
+        // Re-apply in content render path to avoid stale default titles.
+        $this->title = $this->build_display_title($saved_sectionid);
         
         $existing_prompt = $DB->get_record(
             'block_alma_ai_tutor_prompts', 
