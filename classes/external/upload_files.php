@@ -43,7 +43,9 @@ class upload_files extends external_api {
      */
     public static function execute_parameters() {
         return new external_function_parameters([
+            'userid' => new external_value(PARAM_INT, 'User ID'),
             'courseid' => new external_value(PARAM_INT, get_string('course_id', 'block_alma_ai_tutor')),
+            'sectionid' => new external_value(PARAM_INT, 'Section ID', VALUE_DEFAULT, 0),
             'files' => new external_multiple_structure(
                 new external_single_structure([
                     'filename' => new external_value(PARAM_TEXT, get_string('file_name', 'block_alma_ai_tutor')),
@@ -83,11 +85,14 @@ class upload_files extends external_api {
 
     /**
      * Execute the file upload and indexing
+     * 
+     * @param int $userid
      * @param int $courseid
+     * @param int $sectionid
      * @param array $files
      * @return array
      */
-    public static function execute($courseid, $files) {
+    public static function execute($userid, $courseid, $sectionid = 0, $files) {
         global $CFG, $USER, $DB;
 
         // Clean any output that might pollute the JSON response
@@ -99,13 +104,19 @@ class upload_files extends external_api {
         try {
             // Validate parameters
             $params = self::validate_parameters(self::execute_parameters(), [
+                'userid' => $userid,
                 'courseid' => $courseid,
+                'sectionid' => $sectionid,
                 'files' => $files
             ]);
 
             // Validate context and capabilities
             $context = context_course::instance($params['courseid']);
             self::validate_context($context);
+
+            if ($USER->id != $params['userid']) {
+                throw new Exception(get_string('insufficient_permissions', 'block_alma_ai_tutor'));
+            }
             
             // Check capabilities with more flexible requirement
             try {
@@ -215,7 +226,7 @@ class upload_files extends external_api {
                     }
 
                     // Index the text file
-                    $indexed = $connector->index_text_file($destinationTxt, $courseName, (string)$params['courseid']);
+                    $indexed = $connector->index_text_file($destinationTxt, $courseName, (string)$params['userid'], (string)$params['courseid'], (string)$params['sectionid']);
 
                     if (!$indexed) {
                         $error = $connector->get_last_error();

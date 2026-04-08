@@ -382,7 +382,9 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             const request = {
                                 methodname: 'block_alma_ai_tutor_upload_files',
                                 args: {
+                                    userid: userid,
                                     courseid: courseid,
+                                    sectionid: savedsectionid,
                                     files: filesData
                                 }
                             };
