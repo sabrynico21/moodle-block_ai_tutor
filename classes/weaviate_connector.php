@@ -122,7 +122,8 @@ class weaviate_connector {
         $course_id,
         int $section_id = 0,
         int $instance_id = 0,
-        int $session_id = 0
+        int $session_id = 0,
+        string $section_context = ''
     ): ?string {
         global $DB;
 
@@ -186,11 +187,14 @@ class weaviate_connector {
             }
         }
 
+        
         $task = str_replace('[[ coursename ]]', (string)$course_name, $task);
         $task = str_replace('[[ question ]]', $question, $task);
         $task = str_replace('[[ history ]]', $history, $task);
+        $task = str_replace('[[ section_context ]]', $section_context, $task);
 
-        $response = $this->retrieve_and_generate($question, $task, (string)$course_id);
+
+        $response = $this->retrieve_and_generate($question, $task, (string)$course_id, (string)$user_id);
         if ($response === null) {
             return null;
         }
@@ -205,7 +209,7 @@ class weaviate_connector {
      * This implementation targets S3-backed Knowledge Bases:
      * upload file to S3, then trigger StartIngestionJob for the data source.
      */
-    public function index_text_file(string $file_path, string $collection, string $course_id): bool {
+    public function index_text_file(string $file_path, string $collection, string $user_id, string $course_id, string $section_id = '0'): bool {
         if (!file_exists($file_path)) {
             $this->last_error = get_string('file_not_found', 'block_alma_ai_tutor') . $file_path;
             return false;
@@ -230,11 +234,31 @@ class weaviate_connector {
             return false;
         }
 
-        $s3_key = 'courses/' . $course_id . '/' . sha1($file_path . '|' . $course_id . '|' . microtime()) . '.' . $ext;
+        $section_folder = (!empty($section_id) && $section_id !== '0') ? $section_id : '0';
+        $file_hash = sha1($file_path . '|' . $user_id . '|' . $course_id . '|' . microtime());
+        $s3_base        = 'users/' . $user_id
+                        . '/courses/' . $course_id
+                        . '/sections/' . $section_folder
+                        . '/' . $file_hash;
+        $s3_key = $s3_base . '.' . $ext;
         $content_type = $is_pdf ? 'application/pdf' : 'text/plain; charset=utf-8';
 
         if (!$this->s3_put_object($this->s3_bucket, $s3_key, $content, $content_type)) {
             return false;
+        }
+
+        $metadata = json_encode([
+            'metadataAttributes' => [
+                'userid'    => $user_id,
+                'courseid'  => $course_id,
+                'sectionid' => $section_folder,
+            ]
+        ]);
+
+        $s3_metadata_key = $s3_key . '.metadata.json';
+        if (!$this->s3_put_object($this->s3_bucket, $s3_metadata_key, $metadata, 'application/json')) {
+            error_log('alma_ai_tutor: failed to upload metadata for ' . $s3_key . ': ' . $this->last_error);
+            $this->last_error = null;
         }
 
         $ingestion = $this->bedrock_agent_request(
@@ -360,10 +384,31 @@ class weaviate_connector {
      * @param string $courseid
      * @return string|null
      */
-    private function retrieve_and_generate(string $question, string $task, string $courseid): ?string {
+    private function retrieve_and_generate(string $question, string $task, string $courseid, string $userid = ''): ?string {
         $prompttemplate = $this->ensure_kb_prompt_template($task);
         if (strpos($prompttemplate, '$search_results$') === false) {
             $prompttemplate .= '\n\nRetrieved context:\n$search_results$';
+        }
+
+        // Metadata filter for userid
+        $vector_search_config = ['numberOfResults' => 10];
+        if (!empty($userid)) {
+            $vector_search_config['filter'] = [
+                'andAll' => [
+                    [
+                        'equals' => [
+                            'key'   => 'userid',
+                            'value' => $userid,
+                        ],
+                    ],
+                    [
+                        'equals' => [
+                            'key'   => 'courseid',
+                            'value' => $courseid,
+                        ],
+                    ],
+                ],
+            ];
         }
 
         $payload = [
@@ -376,9 +421,7 @@ class weaviate_connector {
                     'knowledgeBaseId' => $this->knowledge_base_id,
                     'modelArn' => 'arn:aws:bedrock:' . $this->region . '::foundation-model/' . $this->chat_model_id,
                     'retrievalConfiguration' => [
-                        'vectorSearchConfiguration' => [
-                            'numberOfResults' => 10,
-                        ],
+                        'vectorSearchConfiguration' => $vector_search_config,
                     ],
                     'generationConfiguration' => [
                         'promptTemplate' => [
