@@ -76,6 +76,17 @@ class send_question extends external_api
         }
 
         try {
+            $dailylimit = self::get_daily_request_limit();
+            if ($dailylimit > 0) {
+                $todayrequestcount = self::get_today_request_count((int)$params['userid']);
+                if ($todayrequestcount >= $dailylimit) {
+                    return [
+                        'status' => 'error',
+                        'error' => get_string('daily_request_limit_exceeded', 'block_alma_ai_tutor', $dailylimit),
+                    ];
+                }
+            }
+
             // Sanitize input
             $question = self::sanitize_chatbot_input(trim($params['question']));
 
@@ -333,5 +344,42 @@ class send_question extends external_api
             $minutes = 30;
         }
         return $minutes * 60;
+    }
+
+    /**
+     * Daily request limit configured for this plugin.
+     *
+     * @return int
+     */
+    private static function get_daily_request_limit(): int
+    {
+        $rawlimit = get_config('block_alma_ai_tutor', 'daily_request_limit');
+        if ($rawlimit === false || $rawlimit === null || $rawlimit === '') {
+            return 5;
+        }
+
+        return max(0, (int)$rawlimit);
+    }
+
+    /**
+     * Count today's chatbot requests for a user.
+     *
+     * @param int $userid
+     * @return int
+     */
+    private static function get_today_request_count(int $userid): int
+    {
+        global $DB;
+
+        $daystart = (new \DateTimeImmutable('today'))->getTimestamp();
+        $sql = "SELECT COUNT(1)
+                  FROM {block_alma_ai_tutor_conversations}
+                 WHERE userid = :userid
+                   AND timecreated >= :daystart";
+
+        return (int)$DB->count_records_sql($sql, [
+            'userid' => $userid,
+            'daystart' => $daystart,
+        ]);
     }
 }

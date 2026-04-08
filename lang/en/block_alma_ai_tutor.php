@@ -296,6 +296,9 @@ $string['privacy:metadata:bedrock_data_automation:extracted_text'] = 'Text extra
 
 $string['chat_session_timeout_minutes'] = 'Chat session inactivity timeout (minutes)';
 $string['chat_session_timeout_minutes_desc'] = 'If no new message is sent for this duration, the next message starts a new conversation session automatically.';
+$string['daily_request_limit'] = 'Daily chatbot request limit';
+$string['daily_request_limit_desc'] = 'Maximum number of chatbot requests each user can send per day across all chatbot blocks. Set 0 for unlimited.';
+$string['daily_request_limit_exceeded'] = 'You have reached your daily limit of {$a} chatbot requests. Please try again tomorrow.';
 $string['new_conversation'] = 'New conversation';
 $string['your_conversations'] = 'Your conversations';
 $string['no_conversations_yet'] = 'No conversations yet.';
