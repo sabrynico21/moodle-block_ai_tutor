@@ -17,6 +17,7 @@ use dml_exception;
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/externallib.php');
+require_once($CFG->dirroot . '/blocks/alma_ai_tutor/classes/course_context_helper.php');
 
 class send_question extends external_api
 {
@@ -121,6 +122,17 @@ class send_question extends external_api
             $course_name = $course_record->fullname;
             $collection_name = 'Collection_course_' . $params['courseid'];
 
+            // Get section Moodle context (or the context of the entire course)
+            $section_context = \block_alma_ai_tutor\course_context_helper::get_context_text(
+                $params['courseid'],
+                $params['sectionid']
+            );
+
+            // DEBUG TEMPORANEO
+            error_log("=== SECTION CONTEXT LENGTH: " . strlen($section_context) . " ===");
+            error_log("=== SECTIONID: " . $params['sectionid'] . " COURSEID: " . $params['courseid'] . " ===");
+            error_log("=== CONTEXT PREVIEW: " . substr($section_context, 0, 200) . " ===");
+
             // Get answer
             if ($params['sansrag']) {
                 $answer = $weaviate_connector->get_cohere_response($question, '');
@@ -133,7 +145,8 @@ class send_question extends external_api
                     $params['courseid'],
                     $params['sectionid'],
                     $params['instanceid'],
-                    $session->id
+                    $session->id,
+                    $section_context
                 );
             }
 
