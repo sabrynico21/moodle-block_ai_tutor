@@ -87,7 +87,7 @@ if (has_capability('block/alma_ai_tutor:manage', context_system::instance()) && 
         'block_alma_ai_tutor/daily_request_limit',
         get_string('daily_request_limit', 'block_alma_ai_tutor'),
         get_string('daily_request_limit_desc', 'block_alma_ai_tutor'),
-        2,
+        5,
         PARAM_INT
     ));
 

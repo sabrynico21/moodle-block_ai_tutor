@@ -31,6 +31,49 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
             const $closeConversationsBtn = $('#close-conversations-' + instanceid);
             const $chatTopToolbar = $newConversationBtn.closest('.chat-top-toolbar');
             let activeSessionId = 0;
+            let latestSessions = [];
+
+            const getSessionStorageKey = function() {
+                return [
+                    'block_alma_ai_tutor',
+                    'active_session',
+                    userid,
+                    courseid,
+                    sectionid,
+                    instanceid
+                ].join(':');
+            };
+
+            const persistActiveSessionId = function(sessionId) {
+                const normalized = parseInt(sessionId, 10) || 0;
+
+                try {
+                    if (!window.sessionStorage) {
+                        return;
+                    }
+
+                    if (normalized > 0) {
+                        window.sessionStorage.setItem(getSessionStorageKey(), String(normalized));
+                    } else {
+                        window.sessionStorage.removeItem(getSessionStorageKey());
+                    }
+                } catch (e) {
+                    // Ignore storage errors (private mode/quota/security policy).
+                }
+            };
+
+            const getPersistedSessionId = function() {
+                try {
+                    if (!window.sessionStorage) {
+                        return 0;
+                    }
+
+                    const persisted = parseInt(window.sessionStorage.getItem(getSessionStorageKey()), 10) || 0;
+                    return persisted > 0 ? persisted : 0;
+                } catch (e) {
+                    return 0;
+                }
+            };
 
             const moveNewConversationToHeader = function() {
                 if (!$newConversationBtn.length) {
@@ -121,8 +164,13 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
 
                     item.on('click', function() {
                         const selectedId = parseInt($(this).attr('data-sessionid'), 10);
-                        activeSessionId = selectedId;
                         loadSessionMessages(selectedId).then(function() {
+                            showChatUi();
+                            loadSessionList();
+                        }).catch(function() {
+                            activeSessionId = 0;
+                            persistActiveSessionId(0);
+                            renderMessages([]);
                             showChatUi();
                             loadSessionList();
                         });
@@ -145,10 +193,12 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
 
                 return ajax.call([request])[0]
                     .then(function(data) {
-                        renderSessionList(data.sessions || []);
+                        latestSessions = data.sessions || [];
+                        renderSessionList(latestSessions);
                     })
                     .catch(function() {
-                        renderSessionList([]);
+                        latestSessions = [];
+                        renderSessionList(latestSessions);
                     });
             };
 
@@ -165,10 +215,12 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                 return ajax.call([request])[0]
                     .then(function(data) {
                         activeSessionId = data.sessionid;
+                        persistActiveSessionId(activeSessionId);
                         renderMessages(data.messages || []);
                     })
                     .catch(function(error) {
                         console.error('Error loading session messages:', error);
+                        throw error;
                     });
             };
 
@@ -266,6 +318,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                         );
                         if (data.sessionid) {
                             activeSessionId = data.sessionid;
+                            persistActiveSessionId(activeSessionId);
                         }
                         $question.val("");
                         $messages.scrollTop($messages[0].scrollHeight);
@@ -500,6 +553,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
             if ($newConversationBtn.length) {
                 $newConversationBtn.on('click', function() {
                     activeSessionId = 0;
+                    persistActiveSessionId(0);
                     renderMessages([]);
                     showChatUi();
                     $question.focus();
@@ -521,7 +575,28 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
 
             moveNewConversationToHeader();
             showChatUi();
-            loadSessionList();
+
+            const restoreSessionId = getPersistedSessionId();
+            let restorePromise = Promise.resolve();
+
+            if (restoreSessionId > 0) {
+                // Preselect to ensure the list highlight is correct even if the list arrives first.
+                activeSessionId = restoreSessionId;
+                restorePromise = loadSessionMessages(restoreSessionId)
+                    .then(function() {
+                        showChatUi();
+                    })
+                    .catch(function() {
+                        activeSessionId = 0;
+                        persistActiveSessionId(0);
+                        renderMessages([]);
+                        showChatUi();
+                    });
+            }
+
+            Promise.all([loadSessionList(), restorePromise]).then(function() {
+                renderSessionList(latestSessions);
+            });
         }
     };
 });
