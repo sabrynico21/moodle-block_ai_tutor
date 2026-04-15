@@ -194,7 +194,13 @@ class weaviate_connector {
         $task = str_replace('[[ section_context ]]', $section_context, $task);
 
 
-        $response = $this->retrieve_and_generate($question, $task, (string)$course_id, (string)$user_id);
+        $response = $this->retrieve_and_generate(
+            $question, 
+            $task, 
+            (string)$course_id, 
+            (string)$user_id,
+            (string)$instance_id
+        );
         if ($response === null) {
             return null;
         }
@@ -209,7 +215,14 @@ class weaviate_connector {
      * This implementation targets S3-backed Knowledge Bases:
      * upload file to S3, then trigger StartIngestionJob for the data source.
      */
-    public function index_text_file(string $file_path, string $collection, string $user_id, string $course_id, string $section_id = '0'): bool {
+    public function index_text_file(
+        string $file_path, 
+        string $collection, 
+        string $user_id, 
+        string $course_id, 
+        string $section_id = '0',
+        string $instance_id = '0'
+    ): bool {
         if (!file_exists($file_path)) {
             $this->last_error = get_string('file_not_found', 'block_alma_ai_tutor') . $file_path;
             return false;
@@ -234,11 +247,17 @@ class weaviate_connector {
             return false;
         }
 
+        $site_hash = substr(md5(get_site_identifier()), 0, 12);
+
         $section_folder = (!empty($section_id) && $section_id !== '0') ? $section_id : '0';
-        $file_hash = sha1($file_path . '|' . $user_id . '|' . $course_id . '|' . microtime());
-        $s3_base        = 'users/' . $user_id
+        $instance_folder = (!empty($instance_id) && $instance_id !== '0') ? $instance_id : '0';
+
+        $file_hash = sha1($file_path . '|' . $user_id . '|' . $course_id . '|' . $instance_id . '|' . microtime());
+        $s3_base        = 'sites/' . $site_hash
+                        . '/users/' . $user_id
                         . '/courses/' . $course_id
                         . '/sections/' . $section_folder
+                        . '/instances/' . $instance_folder
                         . '/' . $file_hash;
         $s3_key = $s3_base . '.' . $ext;
         $content_type = $is_pdf ? 'application/pdf' : 'text/plain; charset=utf-8';
@@ -249,9 +268,11 @@ class weaviate_connector {
 
         $metadata = json_encode([
             'metadataAttributes' => [
+                'sitehash' => $site_hash,
                 'userid'    => $user_id,
                 'courseid'  => $course_id,
                 'sectionid' => $section_folder,
+                'instanceid' => $instance_folder,
             ]
         ]);
 
@@ -384,7 +405,13 @@ class weaviate_connector {
      * @param string $courseid
      * @return string|null
      */
-    private function retrieve_and_generate(string $question, string $task, string $courseid, string $userid = ''): ?string {
+    private function retrieve_and_generate(
+        string $question, 
+        string $task, 
+        string $courseid, 
+        string $userid = '',
+        string $instance_id = ''
+    ): ?string {
         $prompttemplate = $this->ensure_kb_prompt_template($task);
         if (strpos($prompttemplate, '$search_results$') === false) {
             $prompttemplate .= '\n\nRetrieved context:\n$search_results$';
@@ -392,23 +419,41 @@ class weaviate_connector {
 
         // Metadata filter for userid
         $vector_search_config = ['numberOfResults' => 10];
+
         if (!empty($userid)) {
-            $vector_search_config['filter'] = [
-                'andAll' => [
-                    [
-                        'equals' => [
-                            'key'   => 'userid',
-                            'value' => $userid,
-                        ],
+            $site_hash = substr(md5(get_site_identifier()), 0, 12);
+
+            $filter_conditions = [
+                [
+                    'equals' => [
+                        'key'   => 'sitehash', 
+                        'value' => $site_hash,
                     ],
-                    [
-                        'equals' => [
-                            'key'   => 'courseid',
-                            'value' => $courseid,
-                        ],
+                ],
+                [
+                    'equals' => [
+                        'key'   => 'userid',
+                        'value' => $userid,
+                    ],
+                ],
+                [
+                    'equals' => [
+                        'key'   => 'courseid',
+                        'value' => $courseid,
                     ],
                 ],
             ];
+
+            if (!empty($instanceid) && $instanceid !== '0') {
+                $filter_conditions[] = [
+                    'equals' => [
+                        'key'   => 'instanceid',
+                        'value' => $instanceid,
+                    ],
+                ];
+            }
+ 
+            $vector_search_config['filter'] = ['andAll' => $filter_conditions];
         }
 
         $payload = [
@@ -501,7 +546,7 @@ class weaviate_connector {
                 'retrievalQuery' => ['text' => $question],
                 'retrievalConfiguration' => [
                     'vectorSearchConfiguration' => [
-                        'numberOfResults' => 5,
+                        'numberOfResults' => 5
                     ],
                 ],
             ]
