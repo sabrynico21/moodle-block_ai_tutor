@@ -271,8 +271,6 @@ define(['jquery', 'core/str'], function ($, str) {
         setupFileInputListener();
         setupDragAndDrop();
 
-        // Expose function to global scope if needed
-        window.toggleFileUploadModal = toggleFileUploadModal;
         }
     };
 });

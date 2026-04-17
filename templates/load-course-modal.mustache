@@ -50,6 +50,7 @@
                         <div id="uploadedFilesContainer-{{instanceid}}">
                             <!-- Les fichiers uploadés apparaîtront ici avec la classe .uploaded-file -->
                         </div>
+                        <div id="uploadStatusMessage-{{instanceid}}" style="display:none; margin-top:10px;" class="alert alert-info"></div>
                         <div class="modal-footer">
                             <button type="button" class="btn-secondary" onclick="toggleFileUploadModal('{{instanceid}}')">{{#str}}cancel, block_alma_ai_tutor{{/str}}</button>
                             <button type="submit" class="btn-primary">{{#str}}upload_course, block_alma_ai_tutor{{/str}}</button>

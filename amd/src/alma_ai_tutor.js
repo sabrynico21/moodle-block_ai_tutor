@@ -425,6 +425,16 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                     }).catch(function() {
                         $errorDiv.text("Uploading files...");
                     });
+                    
+                    const statusMsg = document.querySelector('#uploadStatusMessage-' + instanceid);
+                    if (statusMsg) {
+                        statusMsg.style.display = 'block';
+                        str.get_string('kb_syncing_message', 'block_alma_ai_tutor').then(function(s) {
+                            statusMsg.textContent = s;
+                        }).catch(function() {
+                            statusMsg.textContent = 'File uploaded! The knowledge base is syncing, this may take a few seconds...';
+                        });
+                    }
 
                     // Convert files to base64 and send via external service
                     convertFilesToBase64(fileInput.files)
@@ -445,21 +455,15 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             $errorDiv.text("");
                             
                             if (response && response.success) {
-                                str.get_string('file_indexed_successfully', 'block_alma_ai_tutor').then(function(s) {
-                                    $errorDiv.text(s);
-                                }).catch(function() {
-                                    $errorDiv.text(response.message || "Files indexed successfully!");
-                                });
-
-                                // Reset form and close modal
                                 fileUploadForm.reset();
                                 const container = document.querySelector('#uploadedFilesContainer-' + instanceid);
                                 if (container) container.innerHTML = '';
-                                toggleFileUploadModal();
 
                                 setTimeout(function() {
+                                    if (statusMsg) statusMsg.style.display = 'none';
+                                    toggleFileUploadModal();
                                     location.reload();
-                                }, 1500);
+                                }, 3000);
                             } else {
                                 str.get_string('unknown_error', 'block_alma_ai_tutor').then(function(unknownErrorStr) {
                                     const responseMessage = response && response.message ? response.message : unknownErrorStr;

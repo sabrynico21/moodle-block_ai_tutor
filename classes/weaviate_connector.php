@@ -199,7 +199,8 @@ class weaviate_connector {
             $task, 
             (string)$course_id, 
             (string)$user_id,
-            (string)$instance_id
+            (string)$instance_id,
+            (string)$section_id
         );
         if ($response === null) {
             return null;
@@ -288,10 +289,19 @@ class weaviate_connector {
             [
                 'knowledgeBaseId' => $this->knowledge_base_id,
                 'dataSourceId'    => $this->data_source_id,
-            ]
+            ],
+            'PUT'
         );
 
+        file_put_contents('/tmp/alma_debug.log', 'ingestion response: ' . json_encode($ingestion) . PHP_EOL, FILE_APPEND);
+
         if ($ingestion === null) {
+            $last_err = $this->last_error ?? '';
+            file_put_contents('/tmp/alma_debug.log', 'ingestion null error: [' . $last_err . ']' . PHP_EOL, FILE_APPEND);
+            if (strpos($last_err, '409') !== false || strpos($last_err, 'currently running') !== false || strpos($last_err, 'STARTING') !== false) {
+                $this->last_error = null;
+                return true;
+            }
             return false;
         }
 
@@ -381,10 +391,16 @@ class weaviate_connector {
             [
                 'knowledgeBaseId' => $this->knowledge_base_id,
                 'dataSourceId'    => $this->data_source_id,
-            ]
+            ],
+            'PUT'
         );
 
         if ($ingestion === null) {
+            $last_err = $this->last_error ?? '';
+            if (strpos($last_err, '409') !== false || strpos($last_err, 'currently running') !== false || strpos($last_err, 'STARTING') !== false) {
+                $this->last_error = 'Knowledge Base re-sync already in progress.';
+                return true;
+            }
             return false;
         }
 
@@ -410,7 +426,8 @@ class weaviate_connector {
         string $task, 
         string $courseid, 
         string $userid = '',
-        string $instance_id = ''
+        string $instance_id = '',
+        string $section_id = '0'
     ): ?string {
         $prompttemplate = $this->ensure_kb_prompt_template($task);
         if (strpos($prompttemplate, '$search_results$') === false) {
@@ -444,11 +461,20 @@ class weaviate_connector {
                 ],
             ];
 
-            if (!empty($instanceid) && $instanceid !== '0') {
+            if (!empty($instance_id) && $instance_id !== '0') {
                 $filter_conditions[] = [
                     'equals' => [
                         'key'   => 'instanceid',
-                        'value' => $instanceid,
+                        'value' => $instance_id,
+                    ],
+                ];
+            }
+
+            if (!empty($section_id) && $section_id !== '0') {
+                $filter_conditions[] = [
+                    'equals' => [
+                        'key'   => 'sectionid',
+                        'value' => $section_id,
                     ],
                 ];
             }
@@ -606,9 +632,9 @@ class weaviate_connector {
      * @param array $payload
      * @return array|null
      */
-    private function bedrock_agent_request(string $path, array $payload): ?array {
+    private function bedrock_agent_request(string $path, array $payload, string $method = 'POST'): ?array {
         $host = 'bedrock-agent.' . $this->region . '.amazonaws.com';
-        return $this->signed_json_request('bedrock', $host, $path, $payload);
+        return $this->signed_json_request('bedrock', $host, $path, $payload, $method);
     }
 
     /**
@@ -618,7 +644,7 @@ class weaviate_connector {
      * @param array $payload
      * @return array|null
      */
-    private function signed_json_request(string $service, string $host, string $path, array $payload): ?array {
+    private function signed_json_request(string $service, string $host, string $path, array $payload, string $method = 'POST'): ?array {
         $body = json_encode($payload);
         if ($body === false) {
             $this->last_error = get_string('json_encode_error', 'block_alma_ai_tutor') . json_last_error_msg();
@@ -626,7 +652,7 @@ class weaviate_connector {
         }
 
         $signer = new aws_v4_signer($this->access_key, $this->secret_key, $this->region, $service, $host);
-        $headers = $signer->sign_request('POST', $path, '', $body, [
+        $headers = $signer->sign_request($method, $path, '', $body, [
             'content-type' => 'application/json',
             'accept' => 'application/json',
         ]);
@@ -640,7 +666,7 @@ class weaviate_connector {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
+            CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_POSTFIELDS => $body,
             CURLOPT_HTTPHEADER => $headerlines,
             CURLOPT_SSL_VERIFYPEER => true,

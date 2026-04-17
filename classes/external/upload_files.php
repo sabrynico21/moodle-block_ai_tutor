@@ -227,6 +227,8 @@ class upload_files extends external_api {
                         $destinationTxt = $destination;
                     }
 
+                    // DEBUG TEMPORANEO
+                    file_put_contents('/tmp/alma_debug.log', 'upload_files called: userid=' . $params['userid'] . ' courseid=' . $params['courseid'] . ' sectionid=' . $params['sectionid'] . ' instanceid=' . $params['instanceid'] . PHP_EOL, FILE_APPEND);
                     // Index the text file
                     $indexed = $connector->index_text_file(
                         $destinationTxt,
@@ -236,6 +238,9 @@ class upload_files extends external_api {
                         (string)$params['sectionid'],
                         (string)$params['instanceid']
                     );
+
+                    // DEBUG TEMPORANEO
+                    file_put_contents('/tmp/alma_debug.log', 'index_text_file result=' . ($indexed ? 'true' : 'false') . PHP_EOL, FILE_APPEND);
 
                     if (!$indexed) {
                         $error = $connector->get_last_error();
