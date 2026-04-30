@@ -38,11 +38,13 @@
 </head>
 <body>
 <div class="block_alma_ai_tutor block-chatbot-container" data-instanceid="{{instanceid}}">
+    {{^isediting}}
     <div class="chat-top-toolbar">
         <button type="button" id="new-conversation-{{instanceid}}" class="prompt-button">
             + {{#str}}new_conversation, block_alma_ai_tutor{{/str}}
         </button>
     </div>
+    {{/isediting}}
     <div id="chat-messages-{{instanceid}}" class="chat-messages">
         <div class="welcome-message">
             <div class="bot-avatar">

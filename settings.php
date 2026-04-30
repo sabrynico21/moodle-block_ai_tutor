@@ -82,6 +82,15 @@ if (has_capability('block/alma_ai_tutor:manage', context_system::instance()) && 
         PARAM_INT
     ));
 
+    // Daily request limit per user (global across all courses and block instances).
+    $settings->add(new admin_setting_configtext(
+        'block_alma_ai_tutor/daily_request_limit',
+        get_string('daily_request_limit', 'block_alma_ai_tutor'),
+        get_string('daily_request_limit_desc', 'block_alma_ai_tutor'),
+        5,
+        PARAM_INT
+    ));
+
     // Button to test API keys
     $settings->add(new admin_setting_test_button(
         'block_alma_ai_tutor/test_api_keys',
