@@ -326,3 +326,4 @@ $string['chatbot_answer'] = 'Chatbot answer';
 $string['back_to_student_sessions'] = 'Back to student sessions';
 $string['backtocourse'] = 'Back to course';
 $string['section'] = 'Section';
+$string['kb_syncing_message'] = 'File uploaded! The knowledge base is syncing, this may take a few seconds...';

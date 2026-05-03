@@ -194,7 +194,14 @@ class weaviate_connector {
         $task = str_replace('[[ section_context ]]', $section_context, $task);
 
 
-        $response = $this->retrieve_and_generate($question, $task, (string)$course_id, (string)$user_id);
+        $response = $this->retrieve_and_generate(
+            $question, 
+            $task, 
+            (string)$course_id, 
+            (string)$user_id,
+            (string)$instance_id,
+            (string)$section_id
+        );
         if ($response === null) {
             return null;
         }
@@ -209,7 +216,14 @@ class weaviate_connector {
      * This implementation targets S3-backed Knowledge Bases:
      * upload file to S3, then trigger StartIngestionJob for the data source.
      */
-    public function index_text_file(string $file_path, string $collection, string $user_id, string $course_id, string $section_id = '0'): bool {
+    public function index_text_file(
+        string $file_path, 
+        string $collection, 
+        string $user_id, 
+        string $course_id, 
+        string $section_id = '0',
+        string $instance_id = '0'
+    ): bool {
         if (!file_exists($file_path)) {
             $this->last_error = get_string('file_not_found', 'block_alma_ai_tutor') . $file_path;
             return false;
@@ -234,11 +248,17 @@ class weaviate_connector {
             return false;
         }
 
+        $site_hash = substr(md5(get_site_identifier()), 0, 12);
+
         $section_folder = (!empty($section_id) && $section_id !== '0') ? $section_id : '0';
-        $file_hash = sha1($file_path . '|' . $user_id . '|' . $course_id . '|' . microtime());
-        $s3_base        = 'users/' . $user_id
+        $instance_folder = (!empty($instance_id) && $instance_id !== '0') ? $instance_id : '0';
+
+        $file_hash = sha1($file_path . '|' . $user_id . '|' . $course_id . '|' . $instance_id . '|' . microtime());
+        $s3_base        = 'sites/' . $site_hash
+                        . '/users/' . $user_id
                         . '/courses/' . $course_id
                         . '/sections/' . $section_folder
+                        . '/instances/' . $instance_folder
                         . '/' . $file_hash;
         $s3_key = $s3_base . '.' . $ext;
         $content_type = $is_pdf ? 'application/pdf' : 'text/plain; charset=utf-8';
@@ -249,9 +269,11 @@ class weaviate_connector {
 
         $metadata = json_encode([
             'metadataAttributes' => [
+                'sitehash' => $site_hash,
                 'userid'    => $user_id,
                 'courseid'  => $course_id,
                 'sectionid' => $section_folder,
+                'instanceid' => $instance_folder,
             ]
         ]);
 
@@ -267,10 +289,19 @@ class weaviate_connector {
             [
                 'knowledgeBaseId' => $this->knowledge_base_id,
                 'dataSourceId'    => $this->data_source_id,
-            ]
+            ],
+            'PUT'
         );
 
+        file_put_contents('/tmp/alma_debug.log', 'ingestion response: ' . json_encode($ingestion) . PHP_EOL, FILE_APPEND);
+
         if ($ingestion === null) {
+            $last_err = $this->last_error ?? '';
+            file_put_contents('/tmp/alma_debug.log', 'ingestion null error: [' . $last_err . ']' . PHP_EOL, FILE_APPEND);
+            if (strpos($last_err, '409') !== false || strpos($last_err, 'currently running') !== false || strpos($last_err, 'STARTING') !== false) {
+                $this->last_error = null;
+                return true;
+            }
             return false;
         }
 
@@ -360,10 +391,16 @@ class weaviate_connector {
             [
                 'knowledgeBaseId' => $this->knowledge_base_id,
                 'dataSourceId'    => $this->data_source_id,
-            ]
+            ],
+            'PUT'
         );
 
         if ($ingestion === null) {
+            $last_err = $this->last_error ?? '';
+            if (strpos($last_err, '409') !== false || strpos($last_err, 'currently running') !== false || strpos($last_err, 'STARTING') !== false) {
+                $this->last_error = 'Knowledge Base re-sync already in progress.';
+                return true;
+            }
             return false;
         }
 
@@ -384,7 +421,14 @@ class weaviate_connector {
      * @param string $courseid
      * @return string|null
      */
-    private function retrieve_and_generate(string $question, string $task, string $courseid, string $userid = ''): ?string {
+    private function retrieve_and_generate(
+        string $question, 
+        string $task, 
+        string $courseid, 
+        string $userid = '',
+        string $instance_id = '',
+        string $section_id = '0'
+    ): ?string {
         $prompttemplate = $this->ensure_kb_prompt_template($task);
         if (strpos($prompttemplate, '$search_results$') === false) {
             $prompttemplate .= '\n\nRetrieved context:\n$search_results$';
@@ -392,23 +436,50 @@ class weaviate_connector {
 
         // Metadata filter for userid
         $vector_search_config = ['numberOfResults' => 10];
+
         if (!empty($userid)) {
-            $vector_search_config['filter'] = [
-                'andAll' => [
-                    [
-                        'equals' => [
-                            'key'   => 'userid',
-                            'value' => $userid,
-                        ],
+            $site_hash = substr(md5(get_site_identifier()), 0, 12);
+
+            $filter_conditions = [
+                [
+                    'equals' => [
+                        'key'   => 'sitehash', 
+                        'value' => $site_hash,
                     ],
-                    [
-                        'equals' => [
-                            'key'   => 'courseid',
-                            'value' => $courseid,
-                        ],
+                ],
+                [
+                    'equals' => [
+                        'key'   => 'userid',
+                        'value' => $userid,
+                    ],
+                ],
+                [
+                    'equals' => [
+                        'key'   => 'courseid',
+                        'value' => $courseid,
                     ],
                 ],
             ];
+
+            if (!empty($instance_id) && $instance_id !== '0') {
+                $filter_conditions[] = [
+                    'equals' => [
+                        'key'   => 'instanceid',
+                        'value' => $instance_id,
+                    ],
+                ];
+            }
+
+            if (!empty($section_id) && $section_id !== '0') {
+                $filter_conditions[] = [
+                    'equals' => [
+                        'key'   => 'sectionid',
+                        'value' => $section_id,
+                    ],
+                ];
+            }
+ 
+            $vector_search_config['filter'] = ['andAll' => $filter_conditions];
         }
 
         $payload = [
@@ -501,7 +572,7 @@ class weaviate_connector {
                 'retrievalQuery' => ['text' => $question],
                 'retrievalConfiguration' => [
                     'vectorSearchConfiguration' => [
-                        'numberOfResults' => 5,
+                        'numberOfResults' => 5
                     ],
                 ],
             ]
@@ -561,9 +632,9 @@ class weaviate_connector {
      * @param array $payload
      * @return array|null
      */
-    private function bedrock_agent_request(string $path, array $payload): ?array {
+    private function bedrock_agent_request(string $path, array $payload, string $method = 'POST'): ?array {
         $host = 'bedrock-agent.' . $this->region . '.amazonaws.com';
-        return $this->signed_json_request('bedrock', $host, $path, $payload);
+        return $this->signed_json_request('bedrock', $host, $path, $payload, $method);
     }
 
     /**
@@ -573,7 +644,7 @@ class weaviate_connector {
      * @param array $payload
      * @return array|null
      */
-    private function signed_json_request(string $service, string $host, string $path, array $payload): ?array {
+    private function signed_json_request(string $service, string $host, string $path, array $payload, string $method = 'POST'): ?array {
         $body = json_encode($payload);
         if ($body === false) {
             $this->last_error = get_string('json_encode_error', 'block_alma_ai_tutor') . json_last_error_msg();
@@ -581,7 +652,7 @@ class weaviate_connector {
         }
 
         $signer = new aws_v4_signer($this->access_key, $this->secret_key, $this->region, $service, $host);
-        $headers = $signer->sign_request('POST', $path, '', $body, [
+        $headers = $signer->sign_request($method, $path, '', $body, [
             'content-type' => 'application/json',
             'accept' => 'application/json',
         ]);
@@ -595,7 +666,7 @@ class weaviate_connector {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
+            CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_POSTFIELDS => $body,
             CURLOPT_HTTPHEADER => $headerlines,
             CURLOPT_SSL_VERIFYPEER => true,

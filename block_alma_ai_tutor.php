@@ -122,10 +122,72 @@ class block_alma_ai_tutor extends block_base
                     ['id' => $this->instance->id]
                 );
             }
+
+            $this->title = $this->generate_instance_title();
         }
 
         // Keep the displayed title aligned with the block instance scope.
         $this->title = $this->build_display_title();
+    }
+
+    private function generate_instance_title(): string
+    {
+        global $DB, $COURSE;
+
+        $block_config = !empty($this->instance->configdata)
+            ? unserialize(base64_decode($this->instance->configdata))
+            : null;
+        $saved_sectionid = ($block_config && isset($block_config->sectionid))
+            ? (int)$block_config->sectionid
+            : 0;
+
+        $all_instances = $DB->get_records_sql(
+            "SELECT bi.id
+               FROM {block_instances} bi
+               JOIN {context} ctx ON ctx.id = bi.parentcontextid
+              WHERE bi.blockname = 'alma_ai_tutor'
+                AND ctx.contextlevel = :contextlevel
+                AND ctx.instanceid   = :courseid
+              ORDER BY bi.id ASC",
+            [
+                'contextlevel' => CONTEXT_COURSE,
+                'courseid'     => $COURSE->id,
+            ]
+        );
+
+        $position = 1;
+        $counter = 0;
+        foreach ($all_instances as $inst) {
+            $inst_record = $DB->get_record('block_instances', ['id' => $inst->id]);
+            $inst_config = !empty($inst_record->configdata)
+                ? @unserialize(base64_decode($inst_record->configdata))
+                : null;
+            $inst_sectionid = ($inst_config && isset($inst_config->sectionid))
+                ? (int)$inst_config->sectionid
+                : 0;
+
+            if ($inst_sectionid === $saved_sectionid) {
+                $counter++;
+                if ((int)$inst->id === (int)$this->instance->id) {
+                    $position = $counter;
+                }
+            }
+        }
+
+        if ($saved_sectionid > 0) {
+            $section = $DB->get_record('course_sections', ['id' => $saved_sectionid], 'name, section');
+            if ($section) {
+                $context_name = !empty($section->name)
+                    ? $section->name
+                    : get_string('section') . ' ' . $section->section;
+            } else {
+                $context_name = $COURSE->fullname;
+            }
+        } else {
+            $context_name = $COURSE->fullname;
+        }
+ 
+        return 'AI Tutor ' . $position . ' - ' . $context_name;
     }
 
     public function get_content()

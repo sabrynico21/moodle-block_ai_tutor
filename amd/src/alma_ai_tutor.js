@@ -3,6 +3,42 @@
  */
 
 define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str, ajax, notification) {
+    
+    if (!window._almaAiTutorInstances) {
+        window._almaAiTutorInstances = {};
+    }
+ 
+    // Le funzioni globali vengono definite una sola volta e delegano
+    // all'istanza corretta tramite il registro.
+    if (!window.togglePromptModal) {
+        window.togglePromptModal = function(iid) {
+            const inst = window._almaAiTutorInstances[String(iid)];
+            if (inst) inst.togglePromptModal();
+        };
+    }
+ 
+    if (!window.toggleFileUploadModal) {
+        window.toggleFileUploadModal = function(iid) {
+            const inst = window._almaAiTutorInstances[String(iid)];
+            if (inst) inst.toggleFileUploadModal();
+        };
+    }
+ 
+    if (!window.openConversationsPanel) {
+        window.openConversationsPanel = function(iid) {
+            const inst = window._almaAiTutorInstances[String(iid)];
+            if (inst) inst.openConversationsPanel();
+        };
+    }
+ 
+    if (!window.closeConversationsPanel) {
+        window.closeConversationsPanel = function(iid) {
+            const inst = window._almaAiTutorInstances[String(iid)];
+            if (inst) inst.closeConversationsPanel();
+        };
+    }
+    
+    
     return {
         init: function(wwwroot, sesskey, userid, courseid, sectionid, instanceid, savedsectionid) {
             // Hiding the block if is not the same section where it was created
@@ -225,28 +261,42 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
             };
 
             // Toggle prompt modal
-            const togglePromptModal = function(iid) {
-                const id = iid || instanceid;
-                const modal = document.querySelector('#promptModal-' + id);
+            const togglePromptModal = function() {
+                const modal = document.querySelector('#promptModal-' + instanceid);
                 if (modal) {
                     modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
                 }
             };
 
             // Toggle file upload modal
-            const toggleFileUploadModal = function (iid) {
-                const id = iid || instanceid;
-                const modal = document.querySelector('#fileUploadModal-' + id);
+            const toggleFileUploadModal = function () {
+                const modal = document.querySelector('#fileUploadModal-' + instanceid);
                 if (modal) {
                     modal.style.display = modal.style.display === 'none' || modal.style.display === '' ? 'flex' : 'none';
 
                     if (modal.style.display === 'none') {
-                        const form = document.querySelector('#fileUploadForm-' + id);
-                        const container = document.querySelector('#uploadedFilesContainer-' + id);
+                        const form = document.querySelector('#fileUploadForm-' + instanceid);
+                        const container = document.querySelector('#uploadedFilesContainer-' + instanceid);
                         if (form) form.reset();
                         if (container) container.innerHTML = '';
                     }
                 }
+            };
+
+            const openConversationsPanel = function() {
+                showSessionsUi();
+                loadSessionList();
+            };
+
+            const closeConversationsPanel = function() {
+                showChatUi();
+            };
+
+            window._almaAiTutorInstances[String(instanceid)] = {
+                togglePromptModal:      togglePromptModal,
+                toggleFileUploadModal:  toggleFileUploadModal,
+                openConversationsPanel: openConversationsPanel,
+                closeConversationsPanel: closeConversationsPanel,
             };
 
             /**
@@ -383,7 +433,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                         }).catch(function() {
                             $errorDiv.text("Prompt saved successfully!");
                         });
-                        togglePromptModal(instanceid);
+                        togglePromptModal();
                         setTimeout(function() {
                             location.reload();
                         }, 1500);
@@ -428,6 +478,16 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                     }).catch(function() {
                         $errorDiv.text("Uploading files...");
                     });
+                    
+                    const statusMsg = document.querySelector('#uploadStatusMessage-' + instanceid);
+                    if (statusMsg) {
+                        statusMsg.style.display = 'block';
+                        str.get_string('kb_syncing_message', 'block_alma_ai_tutor').then(function(s) {
+                            statusMsg.textContent = s;
+                        }).catch(function() {
+                            statusMsg.textContent = 'File uploaded! The knowledge base is syncing, this may take a few seconds...';
+                        });
+                    }
 
                     // Convert files to base64 and send via external service
                     convertFilesToBase64(fileInput.files)
@@ -438,6 +498,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                                     userid: userid,
                                     courseid: courseid,
                                     sectionid: savedsectionid,
+                                    instanceid: instanceid,
                                     files: filesData
                                 }
                             };
@@ -447,21 +508,15 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                             $errorDiv.text("");
                             
                             if (response && response.success) {
-                                str.get_string('file_indexed_successfully', 'block_alma_ai_tutor').then(function(s) {
-                                    $errorDiv.text(s);
-                                }).catch(function() {
-                                    $errorDiv.text(response.message || "Files indexed successfully!");
-                                });
-
-                                // Reset form and close modal
                                 fileUploadForm.reset();
                                 const container = document.querySelector('#uploadedFilesContainer-' + instanceid);
                                 if (container) container.innerHTML = '';
-                                toggleFileUploadModal(instanceid);
 
                                 setTimeout(function() {
+                                    if (statusMsg) statusMsg.style.display = 'none';
+                                    toggleFileUploadModal();
                                     location.reload();
-                                }, 1500);
+                                }, 3000);
                             } else {
                                 str.get_string('unknown_error', 'block_alma_ai_tutor').then(function(unknownErrorStr) {
                                     const responseMessage = response && response.message ? response.message : unknownErrorStr;
@@ -533,7 +588,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                 });
             }
 
-            // Expose functions to the global scope for HTML onclick handlers
+            /* Expose functions to the global scope for HTML onclick handlers
             window.togglePromptModal = togglePromptModal;
             window.toggleFileUploadModal = toggleFileUploadModal;
             window.openConversationsPanel = function(iid) {
@@ -548,7 +603,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                     return;
                 }
                 showChatUi();
-            };
+            };*/
 
             if ($newConversationBtn.length) {
                 $newConversationBtn.on('click', function() {
