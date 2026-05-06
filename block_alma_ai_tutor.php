@@ -127,7 +127,7 @@ class block_alma_ai_tutor extends block_base
         }
 
         // Keep the displayed title aligned with the block instance scope.
-        $this->title = $this->build_display_title();
+        //$this->title = $this->build_display_title();
     }
 
     private function generate_instance_title(): string
@@ -219,7 +219,7 @@ class block_alma_ai_tutor extends block_base
         $saved_sectionid = $this->get_saved_sectionid();
 
         // Re-apply in content render path to avoid stale default titles.
-        $this->title = $this->build_display_title($saved_sectionid);
+        $this->title = $this->generate_instance_title();
         
         $existing_prompt = $DB->get_record(
             'block_alma_ai_tutor_prompts', 
@@ -276,6 +276,71 @@ class block_alma_ai_tutor extends block_base
         $this->content->footer = '';
 
         return $this->content;
+    }
+
+    /**
+     * Called automatically by Moodle when this block instance is deleted.
+     *
+     * Removes all S3 files belonging to this instance from the Bedrock
+     * Knowledge Base and cleans up all related DB records.
+     *
+     * @return bool
+     */
+    public function instance_delete() {
+        global $DB, $CFG;
+
+        $instanceid    = (int)$this->instance->id;
+        $savedsectionid = $this->get_saved_sectionid();
+
+        // Resolve course ID from the parent context.
+        $parentcontext = \context::instance_by_id($this->instance->parentcontextid, IGNORE_MISSING);
+        if ($parentcontext && $parentcontext->contextlevel == CONTEXT_COURSE) {
+            $courseid = (int)$parentcontext->instanceid;
+        } else {
+            $courseid = (int)($this->page->course->id ?? 0);
+        }
+
+        // --- Delete files from S3 and trigger KB re-sync ---
+        if ($courseid > 0) {
+            $bedrock_region        = trim((string)get_config('block_alma_ai_tutor', 'bedrock_region'));
+            $bedrock_access_key    = trim((string)get_config('block_alma_ai_tutor', 'bedrock_access_key'));
+            $bedrock_secret_key    = trim((string)get_config('block_alma_ai_tutor', 'bedrock_secret_key'));
+            $bedrock_kb_id         = trim((string)get_config('block_alma_ai_tutor', 'bedrock_knowledge_base_id'));
+            $bedrock_model_id      = trim((string)get_config('block_alma_ai_tutor', 'bedrock_chat_model_id'));
+            $bedrock_data_source_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_data_source_id'));
+            $bedrock_s3_bucket     = trim((string)get_config('block_alma_ai_tutor', 'bedrock_s3_bucket'));
+
+            if (!empty($bedrock_region) && !empty($bedrock_access_key)
+                    && !empty($bedrock_secret_key) && !empty($bedrock_kb_id)
+                    && !empty($bedrock_data_source_id) && !empty($bedrock_s3_bucket)) {
+
+                require_once($CFG->dirroot . '/blocks/alma_ai_tutor/classes/weaviate_connector.php');
+
+                $connector = new \block_alma_ai_tutor\weaviate_connector(
+                    $bedrock_region,
+                    $bedrock_access_key,
+                    $bedrock_secret_key,
+                    $bedrock_kb_id,
+                    !empty($bedrock_model_id) ? $bedrock_model_id : 'cohere.command-r-v1:0',
+                    $bedrock_data_source_id,
+                    $bedrock_s3_bucket
+                );
+
+                $connector->delete_instance_files(
+                    (string)$courseid,
+                    (string)$savedsectionid,
+                    (string)$instanceid
+                );
+            }
+        }
+
+        // --- Clean up all DB records for this instance ---
+        $DB->delete_records('block_alma_ai_tutor_files',         ['instanceid' => $instanceid]);
+        $DB->delete_records('block_alma_ai_tutor_conversations', ['instanceid' => $instanceid]);
+        $DB->delete_records('block_alma_ai_tutor_chat_sessions', ['instanceid' => $instanceid]);
+        $DB->delete_records('block_alma_ai_tutor_prompts',       ['instanceid' => $instanceid]);
+
+        return true;
     }
 
 }

@@ -185,7 +185,7 @@ foreach ($messages as $message) {
     echo html_writer::tag('h5', get_string('student_question', 'block_alma_ai_tutor'), ['class' => 'card-title']);
     echo html_writer::div(format_text($message->question, FORMAT_PLAIN), 'mb-2');
     echo html_writer::tag('h5', get_string('chatbot_answer', 'block_alma_ai_tutor'), ['class' => 'card-title']);
-    echo html_writer::div(format_text($message->answer, FORMAT_PLAIN), 'mb-2');
+    echo html_writer::div(format_text($message->answer, FORMAT_MARKDOWN), 'mb-2');
     echo html_writer::div(userdate((int)$message->timecreated), 'text-muted small');
     echo html_writer::end_div();
     echo html_writer::end_div();
