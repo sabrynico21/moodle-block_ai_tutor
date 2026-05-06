@@ -194,6 +194,20 @@ class weaviate_connector {
         $task = str_replace('[[ section_context ]]', $section_context, $task);
 
 
+        $has_files = $DB->record_exists('block_alma_ai_tutor_files', [
+            'courseid' => (int)$course_id,
+            'sectionid' => (int)$section_id,
+            'instanceid' => (int)$instance_id,
+        ]);
+
+        if (!$has_files) {
+            $result = $this->direct_generate($question, $task);
+            if ($result !== null) {
+                $this->last_prompt = $task;
+            }
+            return $result;
+        }
+
         $response = $this->retrieve_and_generate(
             $question, 
             $task, 
@@ -203,7 +217,15 @@ class weaviate_connector {
             (string)$section_id
         );
         if ($response === null) {
-            return null;
+            $kb_error = $this->last_error;
+            $this->last_error = null;
+
+            $response = $this->direct_generate($question, $task);
+
+            if ($response === null) {
+                $this->last_error = $kb_error;
+                return null;
+            }
         }
 
         $this->last_prompt = $task;
@@ -265,6 +287,23 @@ class weaviate_connector {
 
         if (!$this->s3_put_object($this->s3_bucket, $s3_key, $content, $content_type)) {
             return false;
+        }
+
+        // Track the uploaded file in the DB for future cleanup.
+        try {
+            global $DB;
+            $filerecord = new \stdClass();
+            $filerecord->userid     = (int)$user_id;
+            $filerecord->courseid   = (int)$course_id;
+            $filerecord->sectionid  = (int)$section_folder;
+            $filerecord->instanceid = (int)$instance_folder;
+            $filerecord->s3key      = $s3_key;
+            $filerecord->filename   = basename($file_path);
+            $filerecord->timecreated = time();
+            $DB->insert_record('block_alma_ai_tutor_files', $filerecord);
+        } catch (\Exception $e) {
+            // Non-critical: log but don't abort the upload.
+            error_log('alma_ai_tutor: failed to track file in DB: ' . $e->getMessage());
         }
 
         $metadata = json_encode([
@@ -360,6 +399,53 @@ class weaviate_connector {
     }
 
     /**
+     * Delete an object from an S3 bucket using AWS SigV4.
+     *
+     * @param string $bucket
+     * @param string $key
+     * @return bool  True also if the object was already absent (404).
+     */
+    private function s3_delete_object(string $bucket, string $key): bool {
+        $host = $bucket . '.s3.' . $this->region . '.amazonaws.com';
+        $path = '/' . ltrim($key, '/');
+
+        $signer = new aws_v4_signer($this->access_key, $this->secret_key, $this->region, 's3', $host);
+        $headers = $signer->sign_request('DELETE', $path, '', '', []);
+
+        $headerlines = [];
+        foreach ($headers as $k => $v) {
+            $headerlines[] = $k . ': ' . $v;
+        }
+
+        $ch = curl_init('https://' . $host . $path);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST  => 'DELETE',
+            CURLOPT_HTTPHEADER     => $headerlines,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_TIMEOUT        => 30,
+        ]);
+
+        $response  = curl_exec($ch);
+        $httpcode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlerror = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlerror) {
+            $this->last_error = 'cURL error (DELETE): ' . $curlerror;
+            return false;
+        }
+
+        // 204 = deleted, 200 = ok, 404 = already gone → all acceptable.
+        if ($httpcode === 204 || $httpcode === 200 || $httpcode === 404) {
+            return true;
+        }
+
+        $this->last_error = 'S3 DELETE HTTP ' . $httpcode . ': ' . $response;
+        return false;
+    }
+
+    /**
      * @return string|null
      */
     public function get_last_error(): ?string {
@@ -406,6 +492,76 @@ class weaviate_connector {
 
         $this->last_error = 'Knowledge Base re-sync initiated. This may take 1-5 minutes to complete.';
         return true;
+    }
+
+    /**
+     * Delete all S3 files associated with a block instance and trigger KB re-sync.
+     *
+     * Reads the tracked S3 keys from the Moodle DB, deletes each object
+     * (plus its .metadata.json companion) from S3, then starts a new
+     * ingestion job so the Knowledge Base no longer returns stale results.
+     *
+     * @param string $courseid
+     * @param string $sectionid
+     * @param string $instanceid
+     * @return bool  True if all deletions succeeded (or there were no files).
+     */
+    public function delete_instance_files(string $courseid, string $sectionid, string $instanceid): bool {
+        global $DB;
+
+        if (empty($this->s3_bucket)) {
+            $this->last_error = 'S3 bucket not configured — cannot delete instance files.';
+            return false;
+        }
+
+        $files = $DB->get_records('block_alma_ai_tutor_files', [
+            'courseid'   => (int)$courseid,
+            'sectionid'  => (int)$sectionid,
+            'instanceid' => (int)$instanceid,
+        ]);
+
+        if (empty($files)) {
+            // Nothing to delete — still a success.
+            return true;
+        }
+
+        $allok = true;
+        foreach ($files as $file) {
+            // Delete the document itself.
+            if (!$this->s3_delete_object($this->s3_bucket, $file->s3key)) {
+                error_log('alma_ai_tutor: failed to delete S3 object ' . $file->s3key . ': ' . $this->last_error);
+                $allok = false;
+            }
+
+            // Delete the companion metadata file (non-critical).
+            $this->s3_delete_object($this->s3_bucket, $file->s3key . '.metadata.json');
+        }
+
+        // Trigger KB re-ingestion so deleted files are removed from the index.
+        $ingestion = $this->bedrock_agent_request(
+            '/knowledgebases/' . rawurlencode($this->knowledge_base_id)
+                . '/datasources/' . rawurlencode($this->data_source_id) . '/ingestionjobs',
+            [
+                'knowledgeBaseId' => $this->knowledge_base_id,
+                'dataSourceId'    => $this->data_source_id,
+            ],
+            'PUT'
+        );
+
+        if ($ingestion === null) {
+            $err = $this->last_error ?? '';
+            // 409 = job already running → the re-sync will pick up our deletions anyway.
+            if (strpos($err, '409') !== false
+                || strpos($err, 'currently running') !== false
+                || strpos($err, 'STARTING') !== false) {
+                $this->last_error = null;
+            } else {
+                error_log('alma_ai_tutor: re-ingestion after file deletion failed: ' . $err);
+                $allok = false;
+            }
+        }
+
+        return $allok;
     }
 
     /**
@@ -592,6 +748,53 @@ class weaviate_connector {
 
         return 'RetrieveAndGenerate returned a generic refusal even though retrieval returned '
             . $count . ' result(s). Check your custom prompt in Moodle and KB guardrail/model policy settings in AWS.';
+    }
+
+    /**
+     * Direct generation via Bedrock Converse API, without Knowledge Base.
+     * Used when no files are indexed for the current instance, or as fallback
+     * when RetrieveAndGenerate fails.
+     *
+     * The resolved $task (with course/section context already injected) is passed
+     * as system prompt so the model still has full course/section awareness.
+     *
+     * @param string $question
+     * @param string $task Already-resolved prompt with all placeholders substituted.
+     * @return string|null
+     */
+    private function direct_generate(string $question, string $task): ?string {
+        $payload = [
+            'system' => [
+                ['text' => $task],
+            ],
+            'messages' => [
+                [
+                    'role'    => 'user',
+                    'content' => [['text' => $task]],
+                ],
+            ],
+            'inferenceConfig' => [
+                'maxTokens'   => 700,
+                'temperature' => 0.3,
+            ],
+        ];
+
+        $result = $this->bedrock_runtime_request(
+            '/model/' . rawurlencode($this->chat_model_id) . '/converse',
+            $payload
+        );
+
+        if ($result === null) {
+            return null;
+        }
+
+        $text = $result['output']['message']['content'][0]['text'] ?? null;
+        if (!$text) {
+            $this->last_error = get_string('invalid_response_format', 'block_alma_ai_tutor');
+            return null;
+        }
+
+        return trim($text);
     }
 
     /**

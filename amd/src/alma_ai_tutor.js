@@ -69,6 +69,29 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
             let activeSessionId = 0;
             let latestSessions = [];
 
+            const renderMarkdown = function(text) {
+                // Escape HTML first to prevent XSS
+                text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                // Headers
+                text = text.replace(/^### (.*)/gm, '<h5>$1</h5>');
+                text = text.replace(/^## (.*)/gm, '<h4>$1</h4>');
+                text = text.replace(/^# (.*)/gm, '<h3>$1</h3>');
+                // Bold
+                text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                // Italic
+                text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                // Unordered lists
+                text = text.replace(/^- (.*)/gm, '<li>$1</li>');
+                text = text.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+                // Paragraphs: double newline → paragrafo
+                text = text.replace(/\n\n/g, '</p><p>');
+                // Single line breaks
+                text = text.replace(/\n/g, '<br>');
+                // Wrap in paragraph
+                text = '<p>' + text + '</p>';
+                return text;
+            };
+
             const getSessionStorageKey = function() {
                 return [
                     'block_alma_ai_tutor',
@@ -169,7 +192,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                 items.forEach(function(item) {
                     $messages.append(
                         '<div class="message user-message">' + item.question + '</div>' +
-                        '<div class="message bot-message">' + item.answer + '</div>'
+                        '<div class="message bot-message">' + renderMarkdown(item.answer) + '</div>'
                     );
                 });
                 $messages.scrollTop($messages[0].scrollHeight);
@@ -364,7 +387,7 @@ define(['jquery', 'core/str', 'core/ajax', 'core/notification'], function($, str
                         }
                         $messages.append(
                             '<div class="message user-message">' + question + '</div>' +
-                            '<div class="message bot-message">'  + data.answer  + '</div>'
+                            '<div class="message bot-message">'  + renderMarkdown(data.answer)  + '</div>'
                         );
                         if (data.sessionid) {
                             activeSessionId = data.sessionid;

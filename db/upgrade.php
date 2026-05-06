@@ -80,5 +80,30 @@ function xmldb_block_alma_ai_tutor_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026032401, 'alma_ai_tutor');
     }
 
+    if ($oldversion < 2026050201) {
+
+        $table = new xmldb_table('block_alma_ai_tutor_files');
+
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id',         XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('userid',     XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('courseid',   XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('sectionid',  XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('instanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('s3key',      XMLDB_TYPE_TEXT,    null, null, XMLDB_NOTNULL, null, null);
+            $table->add_field('filename',   XMLDB_TYPE_CHAR,    '255', null, null, null, null);
+            $table->add_field('timecreated',XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('userid',  XMLDB_KEY_FOREIGN, ['userid'],  'user',   ['id']);
+            $table->add_key('courseid',XMLDB_KEY_FOREIGN, ['courseid'],'course', ['id']);
+            $table->add_index('instanceix', XMLDB_INDEX_NOTUNIQUE, ['courseid', 'sectionid', 'instanceid']);
+
+            $dbman->create_table($table);
+        }
+
+        upgrade_block_savepoint(true, 2026050201, 'alma_ai_tutor');
+    }
+
     return true;
 }

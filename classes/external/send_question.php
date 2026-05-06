@@ -142,7 +142,7 @@ class send_question extends external_api
             // DEBUG TEMPORANEO
             error_log("=== SECTION CONTEXT LENGTH: " . strlen($section_context) . " ===");
             error_log("=== SECTIONID: " . $params['sectionid'] . " COURSEID: " . $params['courseid'] . " ===");
-            error_log("=== CONTEXT PREVIEW: " . substr($section_context, 0, 200) . " ===");
+            error_log("=== CONTEXT PREVIEW: " . $section_context . " ===");
 
             // Get answer
             if ($params['sansrag']) {
