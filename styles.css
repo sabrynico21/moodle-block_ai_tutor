@@ -491,3 +491,48 @@
             padding: 6px 12px;
         }
     }
+
+/* Previously uploaded files list in file upload modal */
+.block_alma_ai_tutor .existing-files-section {
+    margin-bottom: 12px;
+}
+
+.block_alma_ai_tutor .existing-files-section h6 {
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.block_alma_ai_tutor .existing-files-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.block_alma_ai_tutor .existing-file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #e2e8f0;
+    gap: 10px;
+}
+
+.block_alma_ai_tutor .existing-file-item:last-child {
+    border-bottom: none;
+}
+
+.block_alma_ai_tutor .existing-file-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1e293b;
+    word-break: break-all;
+}
+
+.block_alma_ai_tutor .existing-file-date {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+}

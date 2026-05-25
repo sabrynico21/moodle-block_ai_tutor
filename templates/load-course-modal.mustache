@@ -32,6 +32,20 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    {{#has_existing_files}}
+                    <div class="existing-files-section">
+                        <h6>{{#str}}previously_uploaded_files, block_alma_ai_tutor{{/str}}</h6>
+                        <ul class="existing-files-list">
+                            {{#existing_files}}
+                            <li class="existing-file-item">
+                                <span class="existing-file-name">{{filename}}</span>
+                                <span class="existing-file-date text-muted small">{{timecreated}}</span>
+                            </li>
+                            {{/existing_files}}
+                        </ul>
+                    </div>
+                    <hr>
+                    {{/has_existing_files}}
                     <form id="fileUploadForm-{{instanceid}}" enctype="multipart/form-data">
                         <div class="form-group">
                             <label for="file-{{instanceid}}">{{#str}}text_or_pdf_files, block_alma_ai_tutor{{/str}}</label>
