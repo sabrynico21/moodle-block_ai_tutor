@@ -31,6 +31,7 @@ $kb_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_knowledge_base_
 $model_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_chat_model_id'));
 $data_source_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_data_source_id'));
 $s3_bucket = trim((string)get_config('block_alma_ai_tutor', 'bedrock_s3_bucket'));
+$rag_model_arn = trim((string)get_config('block_alma_ai_tutor', 'bedrock_rag_model_arn'));
 
 // Check if resync was requested
 $action = optional_param('action', '', PARAM_TEXT);
@@ -45,7 +46,7 @@ if ($action === 'resync') {
         $connector = new \block_alma_ai_tutor\weaviate_connector(
             $region, $access_key, $secret_key, $kb_id,
             !empty($model_id) ? $model_id : 'cohere.command-r-v1:0',
-            $data_source_id, $s3_bucket
+            $data_source_id, $s3_bucket, $rag_model_arn
         );
 
         if ($connector->resync_knowledge_base()) {
