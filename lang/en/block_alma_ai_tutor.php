@@ -100,13 +100,18 @@ Situation Context
 The learner is taking a course on [[ coursename ]]. Your role is to support them by providing accurate, relevant, and helpful answers adapted to their learning.
 
 Course and Section Content
-The following is the content of the course section where this assistant is deployed. Use it as your primary knowledge base to answer the learner's questions:
+The following is the course content available to this assistant. If deployed on the course homepage, this includes all sections of the course; if deployed in a specific section, it covers only that section's content. Use it as your primary knowledge base to answer the learner's questions:
 
 [[ section_context ]]
 
+Supplementary Documents
+The teacher may have uploaded additional documents to enrich your knowledge base. The relevant excerpts retrieved from these documents are provided below. Treat them as a trusted and valid source, with the same authority as the course content above:
+
+\$search_results$
+
 Mission
-As an assistant, your mission is to help the learner understand concepts from the course on Course X by answering their questions using the provided context. [[ history ]]
-You must provide clear, precise, and relevant responses, and only share information that comes from the course. If the answer cannot be found in the provided context, strictly respond with: "I am calibrated based on the course content carefully selected by your teacher. If you need more information, we encourage you to contact them."
+As an assistant, your mission is to help the learner understand concepts from the course on [[ coursename ]] by answering their questions using the provided context. [[ history ]]
+You must provide clear, precise, and relevant responses, using only information that comes from the course content or the uploaded documents above. If the answer cannot be found in the provided context, strictly respond with: "I am calibrated based on the course content carefully selected by your teacher. If you need more information, we encourage you to contact them."
 
 If the learner writes phrases showing they have not understood a concept or a previous explanation, check [[ history ]] to identify what was misunderstood, then rephrase your explanation more simply with clearer examples.
 
@@ -125,7 +130,7 @@ Instructions
 
 3. Then reply clearly and with structure.  
 4. Use examples where needed.  
-5. Never give answers outside the provided context.
+5. Answer only using the course content and uploaded documents provided above. If the answer is not found in either source, use the calibration message.
 
 6. Integrate the 4 components of empathy (as defined in [Springer Table 1](https://link.springer.com/article/10.1007/s00146-023-01715-z/tables/1)):
    - Cognitive: Show understanding of the learner’s perspective and reformulate to confirm. Suggest ideas linked to what they said without imposing.
@@ -274,7 +279,8 @@ $string['bedrock_s3_bucket'] = 'S3 bucket name for Knowledge Base storage';
 $string['bedrock_s3_bucket_desc'] = 'Name of the S3 bucket backing the Knowledge Base data source (for example: moodle-s3b). Uploaded files will be stored here and synced into the Knowledge Base.';
 $string['bedrock_chat_model_id'] = 'Amazon Bedrock chat model ID';
 $string['bedrock_chat_model_id_desc'] = 'Model ID used for direct generation and RAG generation (default: cohere.command-r-v1:0).';
-
+$string['bedrock_rag_model_arn'] = 'Amazon Bedrock RAG model ARN';
+$string['bedrock_rag_model_arn_desc'] = 'Full ARN of the inference profile to use with RetrieveAndGenerate (e.g. arn:aws:bedrock:us-east-1:123456789:inference-profile/global.anthropic.claude-sonnet-4-20250514-v1:0). If empty, falls back to the chat model ID.';
 $string['bedrock_not_configured'] = 'Amazon Bedrock configuration is missing or invalid. Please verify plugin settings.';
 $string['bedrock_valid_credentials'] = 'Amazon Bedrock credentials are valid.';
 $string['bedrock_runtime_valid'] = 'Bedrock Runtime model invocation succeeded.';
@@ -327,3 +333,5 @@ $string['back_to_student_sessions'] = 'Back to student sessions';
 $string['backtocourse'] = 'Back to course';
 $string['section'] = 'Section';
 $string['kb_syncing_message'] = 'File uploaded! The knowledge base is syncing, this may take a few seconds...';
+$string['previously_uploaded_files'] = 'Previously uploaded files';
+$string['file_already_uploaded'] = 'This file has already been uploaded for this block instance';

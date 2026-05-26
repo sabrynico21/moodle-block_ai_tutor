@@ -111,14 +111,17 @@ if (empty($sessionid)) {
     $sql = "SELECT s.id,
                    s.title,
                    s.sectionid,
+                   COALESCE(cs.section, 0) AS sectionnumber,
+                   cs.name AS sectionname,
                    s.timecreated,
                    s.timemodified,
                    COUNT(c.id) AS totalmessages
               FROM {block_alma_ai_tutor_chat_sessions} s
          LEFT JOIN {block_alma_ai_tutor_conversations} c ON c.sessionid = s.id
+         LEFT JOIN {course_sections} cs ON cs.id = s.sectionid
              WHERE s.courseid = :courseid
                AND s.userid = :userid {$scopesql}
-          GROUP BY s.id, s.title, s.sectionid, s.timecreated, s.timemodified
+          GROUP BY s.id, s.title, s.sectionid, cs.section, cs.name, s.timecreated, s.timemodified
           ORDER BY s.timemodified DESC";
 
     $sessions = $DB->get_records_sql($sql, $usersessionparams);
@@ -147,7 +150,11 @@ if (empty($sessionid)) {
 
         $table->data[] = [
             html_writer::link($sessionurl, s($session->title ?: get_string('untitled_session', 'block_alma_ai_tutor'))),
-            (int)$session->sectionid,
+            (int)$session->sectionid == 0
+                ? s($course->fullname)
+                : (!empty($session->sectionname) 
+                    ? s($session->sectionname) 
+                    : get_string('section', 'block_alma_ai_tutor') . ' ' . ((int)$session->sectionnumber + 1)),
             (int)$session->totalmessages,
             userdate((int)$session->timemodified),
         ];

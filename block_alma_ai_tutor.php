@@ -226,6 +226,26 @@ class block_alma_ai_tutor extends block_base
             ['userid' => $USER->id, 'courseid' => $COURSE->id, 'instanceid' => $instanceid]
         );
 
+        $existing_files_records = $DB->get_records(
+            'block_alma_ai_tutor_files',
+            [
+                'courseid' => $COURSE->id,
+                'sectionid' => $saved_sectionid,
+                'instanceid' => $instanceid,
+            ],
+            'timecreated DESC',
+            'id, filename, timecreated'
+        );
+
+        $existing_files = [];
+        foreach ($existing_files_records as $f) {
+            $existing_files[] = [
+                'fileid' => (int)$f->id,
+                'filename' => $f->filename,
+                'timecreated' => userdate($f->timecreated),
+            ];
+        }
+
         // Check if the user is a teacher
         $coursecontext = context_course::instance($COURSE->id);
         $isteacher = has_capability('moodle/course:manageactivities', $coursecontext);
@@ -246,7 +266,9 @@ class block_alma_ai_tutor extends block_base
                 'sectionid' => $saved_sectionid,
                 'instanceid' => $instanceid,
             ]))->out(false),
-            'sesskey' => sesskey()
+            'sesskey' => sesskey(),
+            'existing_files' => $existing_files,
+            'has_existing_files' =>!empty($existing_files),
         ];
 
         // Load templates
@@ -264,7 +286,8 @@ class block_alma_ai_tutor extends block_base
             $saved_sectionid,
         ]);
         $PAGE->requires->js_call_amd('block_alma_ai_tutor/fileupload', 'init', [
-            $instanceid
+            $instanceid,
+            array_column($existing_files, 'filename'),
         ]);
 
         // Path to the CSS file within the plugin directory
@@ -309,6 +332,7 @@ class block_alma_ai_tutor extends block_base
             $bedrock_model_id      = trim((string)get_config('block_alma_ai_tutor', 'bedrock_chat_model_id'));
             $bedrock_data_source_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_data_source_id'));
             $bedrock_s3_bucket     = trim((string)get_config('block_alma_ai_tutor', 'bedrock_s3_bucket'));
+            $bedrock_rag_model_arn = trim((string)get_config('block_alma_ai_tutor', 'bedrock_rag_model_arn'));
 
             if (!empty($bedrock_region) && !empty($bedrock_access_key)
                     && !empty($bedrock_secret_key) && !empty($bedrock_kb_id)
@@ -323,7 +347,8 @@ class block_alma_ai_tutor extends block_base
                     $bedrock_kb_id,
                     !empty($bedrock_model_id) ? $bedrock_model_id : 'cohere.command-r-v1:0',
                     $bedrock_data_source_id,
-                    $bedrock_s3_bucket
+                    $bedrock_s3_bucket,
+                    $bedrock_rag_model_arn
                 );
 
                 $connector->delete_instance_files(

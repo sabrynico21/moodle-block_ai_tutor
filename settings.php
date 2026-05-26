@@ -73,6 +73,15 @@ if (has_capability('block/alma_ai_tutor:manage', context_system::instance()) && 
         PARAM_TEXT
     ));
 
+    // ARN id for RetrieveAndGenerate (Knowledge Base RAG).
+    $settings->add(new admin_setting_configtext(
+        'block_alma_ai_tutor/bedrock_rag_model_arn',
+        get_string('bedrock_rag_model_arn', 'block_alma_ai_tutor'),
+        get_string('bedrock_rag_model_arn_desc', 'block_alma_ai_tutor'),
+        '',
+        PARAM_TEXT
+    ));
+
     // Session timeout (minutes) before a new chat session is automatically created.
     $settings->add(new admin_setting_configtext(
         'block_alma_ai_tutor/chat_session_timeout_minutes',

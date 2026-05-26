@@ -112,6 +112,7 @@ class send_question extends external_api
             $bedrock_model_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_chat_model_id'));
             $bedrock_data_source_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_data_source_id'));
             $bedrock_s3_bucket = trim((string)get_config('block_alma_ai_tutor', 'bedrock_s3_bucket'));
+            $bedrock_rag_model_arn = trim((string)get_config('block_alma_ai_tutor', 'bedrock_rag_model_arn'));
 
             if (empty($bedrock_region) || empty($bedrock_access_key) || empty($bedrock_secret_key) || empty($bedrock_kb_id)) {
                 throw new \moodle_exception('bedrock_not_configured', 'block_alma_ai_tutor');
@@ -125,7 +126,8 @@ class send_question extends external_api
                 $bedrock_kb_id,
                 !empty($bedrock_model_id) ? $bedrock_model_id : 'cohere.command-r-v1:0',
                 !empty($bedrock_data_source_id) ? $bedrock_data_source_id : '',
-                $bedrock_s3_bucket
+                $bedrock_s3_bucket,
+                $bedrock_rag_model_arn
             );
 
             // Get course information
@@ -138,6 +140,9 @@ class send_question extends external_api
                 $params['courseid'],
                 $params['sectionid']
             );
+            if ($params['sectionid'] == 0) {
+                $section_context = "NOTE: This assistant is deployed on the course homepage and covers the entire course.\n\n" . $section_context;
+            }
 
             // DEBUG TEMPORANEO
             error_log("=== SECTION CONTEXT LENGTH: " . strlen($section_context) . " ===");

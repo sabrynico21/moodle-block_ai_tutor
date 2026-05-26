@@ -46,6 +46,9 @@ class weaviate_connector {
     /** @var string|null */
     private ?string $last_error = null;
 
+    /** @var string */
+    private string $rag_model_arn = '';
+
     /**
      * @param string $region AWS region
      * @param string $access_key AWS access key
@@ -62,7 +65,8 @@ class weaviate_connector {
         string $knowledge_base_id,
         string $chat_model_id = 'cohere.command-r-v1:0',
         string $data_source_id = '',
-        string $s3_bucket = ''
+        string $s3_bucket = '',
+        string $rag_model_arn = ''
     ) {
         $this->region = trim($region);
         $this->access_key = trim($access_key);
@@ -71,6 +75,7 @@ class weaviate_connector {
         $this->chat_model_id = trim($chat_model_id);
         $this->data_source_id = trim($data_source_id);
         $this->s3_bucket = trim($s3_bucket);
+        $this->rag_model_arn = trim($rag_model_arn);
     }
 
     /**
@@ -128,21 +133,17 @@ class weaviate_connector {
         global $DB;
 
         $taskrecord = $DB->get_record('block_alma_ai_tutor_prompts', [
-            'userid' => $user_id,
             'courseid' => $course_id,
             'instanceid' => $instance_id,
-            'sectionid' => $section_id,
         ]);
-        if (!$taskrecord) {
+        if (!$taskrecord && $section_id > 0) {
             $taskrecord = $DB->get_record('block_alma_ai_tutor_prompts', [
-                'userid' => $user_id,
                 'courseid' => $course_id,
-                'instanceid' => $instance_id,
+                'sectionid' => $section_id,
             ]);
         }
         if (!$taskrecord) {
             $taskrecord = $DB->get_record('block_alma_ai_tutor_prompts', [
-                'userid' => $user_id,
                 'courseid' => $course_id,
             ]);
         }
@@ -200,6 +201,8 @@ class weaviate_connector {
             'instanceid' => (int)$instance_id,
         ]);
 
+        error_log('alma_ai_tutor: has_files=' . ($has_files ? 'YES' : 'NO') . ' courseid=' . $course_id . ' sectionid=' . $section_id . ' instanceid=' . $instance_id);
+
         if (!$has_files) {
             $result = $this->direct_generate($question, $task);
             if ($result !== null) {
@@ -216,6 +219,7 @@ class weaviate_connector {
             (string)$instance_id,
             (string)$section_id
         );
+        error_log('alma_ai_tutor: retrieve_and_generate result=' . ($response === null ? 'NULL' : 'OK') . ' last_error=' . ($this->last_error ?? 'none'));
         if ($response === null) {
             $kb_error = $this->last_error;
             $this->last_error = null;
@@ -244,7 +248,8 @@ class weaviate_connector {
         string $user_id, 
         string $course_id, 
         string $section_id = '0',
-        string $instance_id = '0'
+        string $instance_id = '0',
+        string $original_filename = ''
     ): bool {
         if (!file_exists($file_path)) {
             $this->last_error = get_string('file_not_found', 'block_alma_ai_tutor') . $file_path;
@@ -298,7 +303,7 @@ class weaviate_connector {
             $filerecord->sectionid  = (int)$section_folder;
             $filerecord->instanceid = (int)$instance_folder;
             $filerecord->s3key      = $s3_key;
-            $filerecord->filename   = basename($file_path);
+            $filerecord->filename   = !empty($original_filename) ? $original_filename : basename($file_path);
             $filerecord->timecreated = time();
             $DB->insert_record('block_alma_ai_tutor_files', $filerecord);
         } catch (\Exception $e) {
@@ -591,7 +596,7 @@ class weaviate_connector {
         }
 
         // Metadata filter for userid
-        $vector_search_config = ['numberOfResults' => 10];
+        $vector_search_config = ['numberOfResults' => 20];
 
         if (!empty($userid)) {
             $site_hash = substr(md5(get_site_identifier()), 0, 12);
@@ -601,12 +606,6 @@ class weaviate_connector {
                     'equals' => [
                         'key'   => 'sitehash', 
                         'value' => $site_hash,
-                    ],
-                ],
-                [
-                    'equals' => [
-                        'key'   => 'userid',
-                        'value' => $userid,
                     ],
                 ],
                 [
@@ -638,6 +637,11 @@ class weaviate_connector {
             $vector_search_config['filter'] = ['andAll' => $filter_conditions];
         }
 
+
+        $model_arn = !empty($this->rag_model_arn)
+            ? $this->rag_model_arn
+            : 'arn:aws:bedrock:' . $this->region . '::foundation-model/' . $this->chat_model_id;
+
         $payload = [
             'input' => [
                 'text' => $question,
@@ -646,7 +650,7 @@ class weaviate_connector {
                 'type' => 'KNOWLEDGE_BASE',
                 'knowledgeBaseConfiguration' => [
                     'knowledgeBaseId' => $this->knowledge_base_id,
-                    'modelArn' => 'arn:aws:bedrock:' . $this->region . '::foundation-model/' . $this->chat_model_id,
+                    'modelArn' => $model_arn,
                     'retrievalConfiguration' => [
                         'vectorSearchConfiguration' => $vector_search_config,
                     ],
@@ -770,7 +774,7 @@ class weaviate_connector {
             'messages' => [
                 [
                     'role'    => 'user',
-                    'content' => [['text' => $task]],
+                    'content' => [['text' => $question]],
                 ],
             ],
             'inferenceConfig' => [

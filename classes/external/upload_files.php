@@ -142,6 +142,7 @@ class upload_files extends external_api {
             $bedrock_model_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_chat_model_id'));
             $bedrock_data_source_id = trim((string)get_config('block_alma_ai_tutor', 'bedrock_data_source_id'));
             $bedrock_s3_bucket = trim((string)get_config('block_alma_ai_tutor', 'bedrock_s3_bucket'));
+            $bedrock_rag_model_arn = trim((string)get_config('block_alma_ai_tutor', 'bedrock_rag_model_arn'));
 
             // Validate required configurations
             if (empty($bedrock_region) || empty($bedrock_access_key) || empty($bedrock_secret_key) || empty($bedrock_kb_id)) {
@@ -169,7 +170,8 @@ class upload_files extends external_api {
                 $bedrock_kb_id,
                 !empty($bedrock_model_id) ? $bedrock_model_id : 'cohere.command-r-v1:0',
                 $bedrock_data_source_id,
-                $bedrock_s3_bucket
+                $bedrock_s3_bucket,
+                $bedrock_rag_model_arn
             );
 
             $courseName = get_string('collection_prefix', 'block_alma_ai_tutor') . $params['courseid'];
@@ -190,6 +192,18 @@ class upload_files extends external_api {
 
             foreach ($params['files'] as $index => $file) {
                 try {
+                    //Check if the file already exists for this instance
+                    $already_exists = $DB->record_exists('block_alma_ai_tutor_files', [
+                        'filename' => $file['filename'],
+                        'courseid' => $params['courseid'],
+                        'sectionid' => $params['sectionid'],
+                        'instanceid' => $params['instanceid'],
+                    ]);
+
+                    if ($already_exists) {
+                        $errors[] = $file['filename'] . ': ' . get_string('file_already_uploaded', 'block_alma_ai_tutor');
+                        continue;
+                    }
                     // Validate filename
                     if (empty($file['filename'])) {
                         throw new Exception(get_string('empty_filename', 'block_alma_ai_tutor'));
@@ -236,7 +250,8 @@ class upload_files extends external_api {
                         (string)$params['userid'], 
                         (string)$params['courseid'], 
                         (string)$params['sectionid'],
-                        (string)$params['instanceid']
+                        (string)$params['instanceid'],
+                        $file['filename']
                     );
 
                     // DEBUG TEMPORANEO
